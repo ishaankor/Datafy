@@ -271,7 +271,14 @@ export function DataTable({ dataset, selection, setSelection, onAsk }: Props) {
             {dataset.rows.map((r, ri) => {
               const rowActive = selection.rows.has(ri);
               return (
-                <tr key={ri}>
+                <tr
+                  key={ri}
+                  className="animate-fade-in"
+                  style={{
+                    animationDelay: `${Math.min(ri, 30) * 18}ms`,
+                    animationFillMode: "backwards",
+                  }}
+                >
                   <td
                     onClick={(e) => toggleRow(ri, e)}
                     className={`sticky left-0 cursor-pointer text-center text-[10px] border-b border-r border-border transition ${
