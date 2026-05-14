@@ -1,49 +1,51 @@
 import { useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Send, X, Quote } from "lucide-react";
+import { Send, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { parseChartSegments, ChartRenderer } from "@/components/ChartRenderer";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   datasetContext: string;
-  pendingFocus: string | null;
-  onFocusConsumed: () => void;
+  selectionCSV: string;
+  selectionLabel: string | null;
+  pendingPrompt: string | null;
+  onPromptConsumed: () => void;
 }
 
 export function AIChat({
   open,
   onClose,
   datasetContext,
-  pendingFocus,
-  onFocusConsumed,
+  selectionCSV,
+  selectionLabel,
+  pendingPrompt,
+  onPromptConsumed,
 }: Props) {
   const [input, setInput] = useState("");
-  const [focus, setFocus] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const transport = new DefaultChatTransport({
     api: "/api/chat",
-    body: () => ({ datasetContext, focus }),
+    body: () => ({ datasetContext, selectionCSV, selectionLabel }),
   });
 
   const { messages, sendMessage, status } = useChat({ transport });
 
-  // When the user clicks "Ask" on a chart, prefill input
   useEffect(() => {
-    if (pendingFocus) {
-      setInput(pendingFocus);
-      setFocus(pendingFocus);
-      inputRef.current?.focus();
-      onFocusConsumed();
+    if (pendingPrompt) {
+      sendMessage({ text: pendingPrompt });
+      onPromptConsumed();
     }
-  }, [pendingFocus, onFocusConsumed]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPrompt]);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
-  }, [open, messages.length]);
+  }, [open]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -54,19 +56,22 @@ export function AIChat({
     if (!text || status === "streaming" || status === "submitted") return;
     sendMessage({ text });
     setInput("");
-    setFocus(null);
   };
+
+  const suggestions = selectionLabel
+    ? ["Plot this", "What stands out?", "Compare these"]
+    : ["Show me a trend", "What's interesting here?", "Suggest a chart"];
 
   return (
     <aside
-      className={`fixed top-0 right-0 h-screen w-full sm:w-[420px] bg-canvas border-l border-border shadow-noir z-40 flex flex-col transition-transform duration-300 ${
+      className={`fixed top-0 right-0 h-screen w-full sm:w-[460px] bg-canvas border-l border-border shadow-noir z-40 flex flex-col transition-transform duration-300 ${
         open ? "translate-x-0" : "translate-x-full"
       }`}
     >
-      <header className="flex items-center justify-between px-6 py-5 border-b border-border">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border">
         <div>
-          <p className="eyebrow">The Curator</p>
-          <p className="font-display text-xl mt-1">In conversation</p>
+          <p className="eyebrow text-[0.6rem]">Sidekick</p>
+          <p className="font-display text-xl mt-0.5">Let's look at this together</p>
         </div>
         <button
           onClick={onClose}
@@ -77,16 +82,16 @@ export function AIChat({
         </button>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
         {messages.length === 0 && (
-          <div className="text-center py-12">
-            <Quote className="w-8 h-8 text-gold mx-auto mb-4 opacity-60" />
-            <p className="font-display text-lg text-muted-foreground italic leading-relaxed">
-              "Tell me what you see, and I will tell you what it means."
+          <div className="text-center py-10">
+            <Sparkles className="w-7 h-7 text-gold mx-auto mb-4 opacity-70" />
+            <p className="font-display text-lg text-foreground/90 leading-snug max-w-[300px] mx-auto">
+              Highlight any part of the table and I'll plot it, summarize it, or
+              tell you what's interesting.
             </p>
-            <p className="text-xs text-muted-foreground/60 mt-6 max-w-[260px] mx-auto">
-              Ask anything about your data, or click <span className="text-gold">Ask</span> on any
-              plate to begin a focused inquiry.
+            <p className="text-xs text-muted-foreground/70 mt-4">
+              Or just ask me anything about your data.
             </p>
           </div>
         )}
@@ -98,17 +103,31 @@ export function AIChat({
           if (m.role === "user") {
             return (
               <div key={m.id} className="flex justify-end">
-                <div className="max-w-[85%] bg-gold text-ink px-4 py-2.5 rounded-sm text-sm font-medium">
+                <div className="max-w-[88%] bg-gold text-ink px-3.5 py-2 rounded-sm text-sm">
                   {text}
                 </div>
               </div>
             );
           }
+          const segments = parseChartSegments(text);
           return (
             <div key={m.id} className="space-y-1">
-              <p className="eyebrow text-[0.6rem]">Curator</p>
-              <div className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap font-display text-[15px]">
-                {text}
+              <p className="eyebrow text-[0.55rem]">Sidekick</p>
+              <div className="text-sm leading-relaxed text-foreground/90">
+                {segments.map((seg, i) => {
+                  if (seg.kind === "chart") return <ChartRenderer key={i} spec={seg.spec} />;
+                  if (seg.kind === "error")
+                    return (
+                      <p key={i} className="text-xs text-destructive italic">
+                        {seg.text}
+                      </p>
+                    );
+                  return (
+                    <p key={i} className="whitespace-pre-wrap">
+                      {seg.text}
+                    </p>
+                  );
+                })}
               </div>
             </div>
           );
@@ -117,19 +136,30 @@ export function AIChat({
         {(status === "submitted" || status === "streaming") &&
           messages[messages.length - 1]?.role === "user" && (
             <div className="space-y-1">
-              <p className="eyebrow text-[0.6rem]">Curator</p>
-              <p className="text-sm text-muted-foreground italic">Considering…</p>
+              <p className="eyebrow text-[0.55rem]">Sidekick</p>
+              <p className="text-sm text-muted-foreground italic">Looking…</p>
             </div>
           )}
       </div>
 
-      <div className="border-t border-border p-4">
-        {focus && (
-          <div className="mb-2 text-[10px] text-gold/80 font-mono uppercase tracking-widest flex items-center justify-between">
-            <span>Focus engaged</span>
-            <button onClick={() => setFocus(null)} className="hover:text-gold-soft">clear</button>
+      <div className="border-t border-border p-4 space-y-3">
+        {selectionLabel && (
+          <div className="text-[10px] text-gold/80 font-mono uppercase tracking-widest">
+            ✦ Working with {selectionLabel}
           </div>
         )}
+        <div className="flex gap-2 flex-wrap">
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              onClick={() => sendMessage({ text: s })}
+              disabled={status === "streaming" || status === "submitted"}
+              className="text-[11px] border border-border text-muted-foreground hover:text-gold hover:border-gold/40 px-2.5 py-1 rounded-sm transition disabled:opacity-50"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
         <div className="flex gap-2 items-end">
           <textarea
             ref={inputRef}
@@ -141,7 +171,7 @@ export function AIChat({
                 submit();
               }
             }}
-            placeholder="Ask the curator…"
+            placeholder={selectionLabel ? "Ask about the selection…" : "Ask me anything about the data…"}
             rows={2}
             className="flex-1 bg-ink/50 border border-border rounded-sm p-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-gold/50 resize-none"
           />
