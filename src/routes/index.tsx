@@ -96,7 +96,10 @@ function Index() {
         </div>
       </nav>
 
-      <div className={chatOpen ? "sm:pr-[460px] transition-[padding] duration-300" : ""}>
+      <div
+        className={`animate-fade-in ${chatOpen ? "sm:pr-[460px] transition-[padding] duration-300" : ""}`}
+        style={{ animationDelay: "180ms", animationFillMode: "backwards" }}
+      >
         <DataTable
           dataset={dataset}
           selection={selection}
