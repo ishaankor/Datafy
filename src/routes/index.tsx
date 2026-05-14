@@ -61,8 +61,8 @@ function Index() {
   }
 
   return (
-    <main className="bg-background text-foreground h-screen overflow-hidden">
-      <nav className="bg-background/90 backdrop-blur border-b border-border">
+    <main key={name} className="bg-background text-foreground h-screen overflow-hidden animate-fade-in">
+      <nav className="bg-background/90 backdrop-blur border-b border-border animate-fade-in" style={{ animationDelay: "80ms", animationFillMode: "backwards" }}>
         <div className="px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="font-display text-xl">
