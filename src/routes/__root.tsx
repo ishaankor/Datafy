@@ -74,9 +74,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Atelier — Editorial data canvas with AI" },
+      { title: "Datafy! — Editorial data canvas for deep research" },
       { name: "description", content: "Paste a dataset. Receive an editorial canvas. Ask the curator anything." },
-      { property: "og:title", content: "Atelier — Editorial data canvas" },
+      { property: "og:title", content: "Datafy! — Editorial data canvas" },
       { property: "og:description", content: "An aesthetic, AI-curated way to explore your data." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -66,7 +66,7 @@ function Index() {
         <div className="px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="font-display text-xl">
-              Atelier<span className="text-gold">.</span>
+              Datafy!<span className="text-gold">.</span>
             </span>
             <span className="hidden md:block text-xs text-muted-foreground font-mono">
               / {name} · {dataset.rows.length} rows × {dataset.columns.length} cols

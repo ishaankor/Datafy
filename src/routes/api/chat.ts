@@ -1,7 +1,7 @@
 import "@tanstack/react-start";
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google"; // <-- Import the provider
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
 type ChatRequestBody = {
   messages?: unknown;
@@ -16,6 +16,13 @@ export const Route = createFileRoute("/api/chat")({
       POST: async ({ request }: { request: Request }) => {
         const { messages, datasetContext, selectionCSV, selectionLabel } =
           (await request.json()) as ChatRequestBody;
+
+        console.log("🚨 SERVER RECEIVED PAYLOAD:", { 
+          hasMessages: !!messages, 
+          datasetContextLength: datasetContext?.length || 0,
+          selectionCSV: selectionCSV || "NO SELECTION",
+          selectionLabel: selectionLabel || "NO LABEL"
+        });
 
         if (!Array.isArray(messages)) {
           return new Response("Messages are required", { status: 400 });
@@ -36,7 +43,6 @@ export const Route = createFileRoute("/api/chat")({
 
         const system = [
           "You are a personable, sharp data companion sitting beside the user as they explore a raw dataset.",
-// ... (keep the rest of your system prompt and streamText logic exactly the same) ...
           "Be warm, conversational, concise. First-person, no filler. Default to under 5 sentences.",
           "",
           "## How to draw charts",
@@ -50,6 +56,7 @@ export const Route = createFileRoute("/api/chat")({
           "- Keep `data` under 100 points.",
           "- You may include a brief sentence before/after the chart explaining it.",
           "- Multiple charts are okay — emit multiple ```chart``` blocks.",
+          "- Make sure tooltips are always used to accurately show relevant values and categories.",
           "",
           "Be opinionated about chart choice (trends → line/area, parts-of-whole → pie, comparisons → bar, relationships → scatter).",
           datasetContext ? `\n--- FULL DATASET CONTEXT ---\n${datasetContext}` : "",
@@ -62,7 +69,6 @@ export const Route = createFileRoute("/api/chat")({
           model,
           system,
           messages: await convertToModelMessages(messages as UIMessage[]),
-          // Add this error logger:
           onError: ({ error }) => {
             console.error("🚨 GEMINI CRASH REPORT:", error);
           }
