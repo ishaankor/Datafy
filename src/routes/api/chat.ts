@@ -21,16 +21,17 @@ export const Route = createFileRoute("/api/chat")({
           return new Response("Messages are required", { status: 400 });
         }
 
-        // 1. Explicitly grab your new Cloudflare Secret
-        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+        const keyName = "GOOGLE_GENERATIVE_AI_API_KEY";
+        const apiKey = (process.env[keyName] || "").trim();
         
-        // 2. Throw a 500 with a clear message if it fails
         if (!apiKey) {
           return new Response("Missing GOOGLE_GENERATIVE_AI_API_KEY in Cloudflare", { status: 500 });
         }
 
-        // 3. Initialize the Google provider safely
-        const google = createGoogleGenerativeAI({ apiKey });
+        const google = createGoogleGenerativeAI({ 
+          apiKey: apiKey,
+          fetch: fetch
+        });
         const model = google("gemini-1.5-flash");
 
         const system = [
