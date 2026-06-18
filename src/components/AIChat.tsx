@@ -27,9 +27,10 @@ export function AIChat({
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const chatApiUrl = import.meta.env.VITE_CHAT_API_URL ?? "/api/chat";
 
   const transport = new DefaultChatTransport({
-    api: "/api/chat",
+    api: chatApiUrl,
     body: () => ({ datasetContext, selectionCSV, selectionLabel }),
   });
 
