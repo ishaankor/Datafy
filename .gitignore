@@ -20,7 +20,7 @@ dist-ssr
 .dev.vars
 
 # Editor directories and files
-.lovable/*
+.lovable/
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -30,3 +30,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.gitignore
