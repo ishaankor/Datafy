@@ -44,6 +44,7 @@ function Index() {
     () => (dataset ? selectionToCSV(dataset, selection) : ""),
     [dataset, selection],
   );
+  
   const selLabel = useMemo(() => selectionLabel(selection), [selection]);
 
   if (!dataset) {

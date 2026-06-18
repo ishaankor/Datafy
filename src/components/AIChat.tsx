@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Send, X, Sparkles } from "lucide-react";
@@ -29,20 +29,35 @@ export function AIChat({
   const scrollRef = useRef<HTMLDivElement>(null);
   const chatApiUrl = "/api/chat";
 
-  const transport = new DefaultChatTransport({
+  // THE GATEKEEPER: Ensure empty selections don't flood the AI with full-table duplicates
+  const hasRealSelection = Boolean(selectionLabel && selectionLabel.trim() !== "");
+  const activeSelectionCSV = hasRealSelection ? selectionCSV : undefined;
+  const activeSelectionLabel = hasRealSelection ? selectionLabel : undefined;
+
+  // Memoize the transport so it doesn't rebuild and lose state on re-renders
+  const transport = useMemo(() => new DefaultChatTransport({
     api: chatApiUrl,
-    body: () => ({ datasetContext, selectionCSV, selectionLabel }),
-  });
+  }), [chatApiUrl]);
 
   const { messages, sendMessage, status } = useChat({ transport });
 
   useEffect(() => {
-    if (pendingPrompt) {
-      sendMessage({ text: pendingPrompt });
+    if (pendingPrompt && open) {
+      sendMessage(
+        { text: pendingPrompt },
+        {
+          // FIX: Pass the absolute latest dynamic data here to bypass the cache
+          body: {
+            datasetContext,
+            selectionCSV: activeSelectionCSV,
+            selectionLabel: activeSelectionLabel,
+          }
+        }
+      );
       onPromptConsumed();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingPrompt]);
+  }, [pendingPrompt, open]);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
@@ -55,11 +70,22 @@ export function AIChat({
   const submit = () => {
     const text = input.trim();
     if (!text || status === "streaming" || status === "submitted") return;
-    sendMessage({ text });
+    
+    sendMessage(
+      { text },
+      {
+        // FIX: Pass the absolute latest dynamic data here to bypass the cache
+        body: {
+          datasetContext,
+          selectionCSV: activeSelectionCSV,
+          selectionLabel: activeSelectionLabel,
+        }
+      }
+    );
     setInput("");
   };
 
-  const suggestions = selectionLabel
+  const suggestions = activeSelectionLabel
     ? ["Plot this", "What stands out?", "Compare these"]
     : ["Show me a trend", "What's interesting here?", "Suggest a chart"];
 
@@ -144,16 +170,26 @@ export function AIChat({
       </div>
 
       <div className="border-t border-border p-4 space-y-3">
-        {selectionLabel && (
+        {activeSelectionLabel && (
           <div className="text-[10px] text-gold/80 font-mono uppercase tracking-widest">
-            ✦ Working with {selectionLabel}
+            ✦ Working with {activeSelectionLabel}
           </div>
         )}
         <div className="flex gap-2 flex-wrap">
           {suggestions.map((s) => (
             <button
               key={s}
-              onClick={() => sendMessage({ text: s })}
+              onClick={() => sendMessage(
+                { text: s },
+                {
+                  // FIX: Pass the absolute latest dynamic data here
+                  body: {
+                    datasetContext,
+                    selectionCSV: activeSelectionCSV,
+                    selectionLabel: activeSelectionLabel,
+                  }
+                }
+              )}
               disabled={status === "streaming" || status === "submitted"}
               className="text-[11px] border border-border text-muted-foreground hover:text-gold hover:border-gold/40 px-2.5 py-1 rounded-sm transition disabled:opacity-50"
             >
@@ -172,7 +208,7 @@ export function AIChat({
                 submit();
               }
             }}
-            placeholder={selectionLabel ? "Ask about the selection…" : "Ask me anything about the data…"}
+            placeholder={activeSelectionLabel ? "Ask about the selection…" : "Ask me anything about the data…"}
             rows={2}
             className="flex-1 bg-ink/50 border border-border rounded-sm p-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-gold/50 resize-none"
           />

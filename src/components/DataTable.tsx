@@ -15,13 +15,11 @@ export const emptySelection = (): Selection => ({
 
 export function selectionToCSV(ds: Dataset, sel: Selection): string {
   const colNames = ds.columns.map((c) => c.name);
-  // Determine effective columns
   const colsActive =
     sel.cols.size > 0
       ? colNames.filter((n) => sel.cols.has(n))
       : colNames;
 
-  // Determine effective rows
   let rowIdx: number[] = [];
   if (sel.rows.size > 0) rowIdx = Array.from(sel.rows).sort((a, b) => a - b);
   else if (sel.cells.size > 0) {
