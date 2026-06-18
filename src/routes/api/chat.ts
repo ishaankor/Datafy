@@ -32,7 +32,7 @@ export const Route = createFileRoute("/api/chat")({
           apiKey: apiKey,
           fetch: fetch
         });
-        const model = google("gemini-1.5-flash");
+        const model = google("models/gemini-1.5-flash");
 
         const system = [
           "You are a personable, sharp data companion sitting beside the user as they explore a raw dataset.",
