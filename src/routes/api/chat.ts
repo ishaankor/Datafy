@@ -39,7 +39,7 @@ export const Route = createFileRoute("/api/chat")({
           apiKey: apiKey,
           fetch: fetch
         });
-        const model = google("gemini-flash-latest");
+        const model = google("gemini-1.5-flash-8b");
 
         const system = [
           "You are a personable, sharp data companion sitting beside the user as they explore a raw dataset.",
@@ -59,10 +59,9 @@ export const Route = createFileRoute("/api/chat")({
           "- Make sure tooltips are always used to accurately show relevant values and categories.",
           "",
           "Be opinionated about chart choice (trends → line/area, parts-of-whole → pie, comparisons → bar, relationships → scatter).",
-          datasetContext ? `\n--- FULL DATASET CONTEXT ---\n${datasetContext}` : "",
           selectionCSV
             ? `\n--- USER'S CURRENT SELECTION (${selectionLabel ?? "selection"}) ---\n${selectionCSV}`
-            : "\n--- USER'S CURRENT SELECTION ---\n(none — they haven't highlighted anything yet)",
+            : `\n--- FULL DATASET CONTEXT ---\n${datasetContext}`,
         ].join("\n");
 
         const result = streamText({
