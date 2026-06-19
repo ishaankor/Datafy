@@ -14,20 +14,19 @@ export const emptySelection = (): Selection => ({
 });
 
 export function selectionToCSV(ds: Dataset, sel: Selection): string {
+  const toCsvVal = (v: any) => {
+    if (v === null || v === undefined) return "";
+    const s = String(v);
+    return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
   if (sel.rows.size === 0 && sel.cols.size === 0 && sel.cells.size === 0) {
-    const colNames = ds.columns.map((c) => c.name);
-    const head = colNames.join(",");
+    const head = ["_row_index", ...ds.columns.map((c) => c.name)].join(",");
     const body = ds.rows
-      .map((r) =>
-        colNames
-          .map((c) => {
-            const v = r[c];
-            if (v === null || v === undefined) return "";
-            const s = String(v);
-            return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-          })
-          .join(","),
-      )
+      .map((r, i) => {
+        const vals = [i + 1, ...ds.columns.map((c) => r[c.name])];
+        return vals.map(toCsvVal).join(",");
+      })
       .join("\n");
     return `${head}\n${body}`;
   }
@@ -48,12 +47,8 @@ export function selectionToCSV(ds: Dataset, sel: Selection): string {
       colNames.forEach((_, i) => activeColIndices.add(i));
   }
 
-  if (colNames.length > 0 && !activeColIndices.has(0)) {
-    activeColIndices.add(0);
-  }
-
   const colsActiveIdx = Array.from(activeColIndices).sort((a, b) => a - b);
-  const colsActiveNames = colsActiveIdx.map(i => colNames[i]);
+  const colsActiveNames = colsActiveIdx.map((i) => colNames[i]);
 
   const activeRowIndices = new Set<number>();
   
@@ -71,30 +66,26 @@ export function selectionToCSV(ds: Dataset, sel: Selection): string {
 
   const rowIdx = Array.from(activeRowIndices).sort((a, b) => a - b);
 
-  const head = colsActiveNames.join(",");
+  const head = ["_row_index", ...colsActiveNames].join(",");
   const body = rowIdx
     .map((rIndex) => {
-      return colsActiveIdx
-        .map((cIndex) => {
-          const colName = colNames[cIndex];
-          
-          const isRowSelected = sel.rows.has(rIndex);
-          const isColSelected = sel.cols.has(colName);
-          const isCellSelected = sel.cells.has(`${rIndex}:${cIndex}`);
-          const isFirstColumn = cIndex === 0;
+      const rowVals = colsActiveIdx.map((cIndex) => {
+        const colName = colNames[cIndex];
+        
+        const isRowSelected = sel.rows.has(rIndex);
+        const isColSelected = sel.cols.has(colName);
+        const isCellSelected = sel.cells.has(`${rIndex}:${cIndex}`);
 
-          const isVisible = isRowSelected || isColSelected || isCellSelected || isFirstColumn;
+        const isVisible = isRowSelected || isColSelected || isCellSelected;
 
-          if (!isVisible) {
-            return "";
-          }
+        if (!isVisible) {
+          return "-"; 
+        }
 
-          const v = ds.rows[rIndex]?.[colName];
-          if (v === null || v === undefined) return "";
-          const s = String(v);
-          return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-        })
-        .join(",");
+        return ds.rows[rIndex]?.[colName];
+      });
+
+      return [rIndex + 1, ...rowVals].map(toCsvVal).join(",");
     })
     .join("\n");
     
@@ -106,7 +97,7 @@ export function selectionLabel(sel: Selection): string | null {
   if (sel.cols.size) parts.push(`${sel.cols.size} column${sel.cols.size > 1 ? "s" : ""}`);
   if (sel.rows.size) parts.push(`${sel.rows.size} row${sel.rows.size > 1 ? "s" : ""}`);
   if (sel.cells.size) parts.push(`${sel.cells.size} cell${sel.cells.size > 1 ? "s" : ""}`);
-  return parts.length ? parts.join(" · ") : null;
+  return parts.length ? parts.join(" · ") : "Entire dataset";
 }
 
 interface Props {
