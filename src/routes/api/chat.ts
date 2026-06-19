@@ -68,7 +68,6 @@ export const Route = createFileRoute("/api/chat")({
           }
         });
 
-        // 4. Use standard data stream response
         return result.toUIMessageStreamResponse({
           originalMessages: messages as UIMessage[],
         });
