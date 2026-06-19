@@ -21,12 +21,9 @@ export function selectionToCSV(ds: Dataset, sel: Selection): string {
   };
 
   if (sel.rows.size === 0 && sel.cols.size === 0 && sel.cells.size === 0) {
-    const head = ["_row_index", ...ds.columns.map((c) => c.name)].join(",");
+    const head = ds.columns.map((c) => c.name).join(",");
     const body = ds.rows
-      .map((r, i) => {
-        const vals = [i + 1, ...ds.columns.map((c) => r[c.name])];
-        return vals.map(toCsvVal).join(",");
-      })
+      .map((r) => ds.columns.map((c) => toCsvVal(r[c.name])).join(","))
       .join("\n");
     return `${head}\n${body}`;
   }
@@ -45,6 +42,10 @@ export function selectionToCSV(ds: Dataset, sel: Selection): string {
 
   if (sel.rows.size > 0 && sel.cols.size === 0 && sel.cells.size === 0) {
       colNames.forEach((_, i) => activeColIndices.add(i));
+  }
+
+  if (colNames.length > 0) {
+    activeColIndices.add(0);
   }
 
   const colsActiveIdx = Array.from(activeColIndices).sort((a, b) => a - b);
@@ -66,7 +67,7 @@ export function selectionToCSV(ds: Dataset, sel: Selection): string {
 
   const rowIdx = Array.from(activeRowIndices).sort((a, b) => a - b);
 
-  const head = ["_row_index", ...colsActiveNames].join(",");
+  const head = colsActiveNames.join(",");
   const body = rowIdx
     .map((rIndex) => {
       const rowVals = colsActiveIdx.map((cIndex) => {
@@ -75,17 +76,18 @@ export function selectionToCSV(ds: Dataset, sel: Selection): string {
         const isRowSelected = sel.rows.has(rIndex);
         const isColSelected = sel.cols.has(colName);
         const isCellSelected = sel.cells.has(`${rIndex}:${cIndex}`);
+        const isFirstColumn = cIndex === 0;
 
-        const isVisible = isRowSelected || isColSelected || isCellSelected;
+        const isVisible = isRowSelected || isColSelected || isCellSelected || isFirstColumn;
 
         if (!isVisible) {
           return "-"; 
         }
 
-        return ds.rows[rIndex]?.[colName];
+        return toCsvVal(ds.rows[rIndex]?.[colName]);
       });
 
-      return [rIndex + 1, ...rowVals].map(toCsvVal).join(",");
+      return rowVals.join(",");
     })
     .join("\n");
     
