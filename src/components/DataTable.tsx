@@ -46,12 +46,44 @@ export function selectionToCSV(ds: Dataset, sel: Selection): string {
   return `${head}\n${body}`;
 }
 
-export function selectionLabel(sel: Selection): string | null {
-  const parts: string[] = [];
-  if (sel.cols.size) parts.push(`${sel.cols.size} column${sel.cols.size > 1 ? "s" : ""}`);
-  if (sel.rows.size) parts.push(`${sel.rows.size} row${sel.rows.size > 1 ? "s" : ""}`);
-  if (sel.cells.size) parts.push(`${sel.cells.size} cell${sel.cells.size > 1 ? "s" : ""}`);
-  return parts.length ? parts.join(" · ") : null;
+export function selectionLabel(sel: Selection, cols?: { name: string }[]): string | null {
+  // 1. If entire columns are selected
+  if (sel.cols.size > 0) {
+    const names = Array.from(sel.cols);
+    const display = names.slice(0, 3).join(", ");
+    return names.length > 3 ? `${display} + ${names.length - 3} more` : display;
+  }
+
+  // 2. If entire rows are selected
+  if (sel.rows.size > 0) {
+    const rows = Array.from(sel.rows).sort((a, b) => a - b).map((r) => r + 1);
+    const display = rows.slice(0, 3).join(", ");
+    return `Row${rows.length > 1 ? "s" : ""} ${display}${rows.length > 3 ? ` + ${rows.length - 3} more` : ""}`;
+  }
+
+  // 3. If individual cells/grid are dragged over
+  if (sel.cells.size > 0) {
+    if (cols) {
+      // Extract unique column indices from the "row:col" strings
+      const colIdx = new Set<number>();
+      sel.cells.forEach((k) => colIdx.add(Number(k.split(":")[1])));
+      
+      // Map those indices to the actual column names
+      const names = Array.from(colIdx)
+        .sort((a, b) => a - b)
+        .map((c) => cols[c]?.name)
+        .filter(Boolean);
+
+      if (names.length > 0) {
+        const display = names.slice(0, 3).join(", ");
+        const colStr = names.length > 3 ? `${display} + ${names.length - 3} more` : display;
+        return `${colStr} (${sel.cells.size} cells)`;
+      }
+    }
+    return `${sel.cells.size} cells`;
+  }
+
+  return null;
 }
 
 interface Props {

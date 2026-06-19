@@ -14,7 +14,6 @@ export function DataInput({ onLoad }: Props) {
     async (f: File) => {
       setLoading(true);
       const txt = await f.text();
-      // brief delay so the user perceives the transition animation
       setTimeout(() => onLoad(txt, f.name.replace(/\.[^.]+$/, "")), 350);
     },
     [onLoad],
