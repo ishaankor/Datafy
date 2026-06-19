@@ -33,10 +33,8 @@ export const Route = createFileRoute("/api/chat")({
           return new Response("Missing GROQ_API_KEY", { status: 500 });
         }
 
-        // 1. Initialize Groq instead of Google
         const groq = createGroq({ apiKey });
         
-        // 2. Use the fast, versatile Llama 3.3 model
         const model = groq("llama-3.3-70b-versatile");
 
         const system = [
