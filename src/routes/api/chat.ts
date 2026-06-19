@@ -1,7 +1,7 @@
 import "@tanstack/react-start";
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createGroq } from "@ai-sdk/groq";
 
 type ChatRequestBody = {
   messages?: unknown;
@@ -23,42 +23,37 @@ export const Route = createFileRoute("/api/chat")({
           selectionCSV: selectionCSV || "NO SELECTION",
           selectionLabel: selectionLabel || "NO LABEL"
         });
-
         if (!Array.isArray(messages)) {
           return new Response("Messages are required", { status: 400 });
         }
 
-        const keyName = "GOOGLE_GENERATIVE_AI_API_KEY";
-        const apiKey = (process.env[keyName] || "").trim();
+        const apiKey = (process.env.GROQ_API_KEY || "").trim();
         
         if (!apiKey) {
-          return new Response("Missing GOOGLE_GENERATIVE_AI_API_KEY in Cloudflare", { status: 500 });
+          return new Response("Missing GROQ_API_KEY", { status: 500 });
         }
 
-        const google = createGoogleGenerativeAI({ 
-          apiKey: apiKey,
-          fetch: fetch
-        });
-        const model = google("gemini-1.5-flash-8b");
+        // 1. Initialize Groq instead of Google
+        const groq = createGroq({ apiKey });
+        
+        // 2. Use the fast, versatile Llama 3.3 model
+        const model = groq("llama-3.3-70b-versatile");
 
         const system = [
           "You are a personable, sharp data companion sitting beside the user as they explore a raw dataset.",
           "Be warm, conversational, concise. First-person, no filler. Default to under 5 sentences.",
+          "Always generate questions that target mathematical concepts.",
           "",
           "## How to draw charts",
-          "When a chart would help (or the user asks for one), embed it as a fenced ```chart``` block containing JSON of this shape:",
+          "When a chart would help, embed it as a fenced ```chart``` block containing JSON of this shape:",
           "```chart",
           '{ "type": "line"|"bar"|"pie"|"scatter"|"area", "title": "...", "caption": "...", "x": "<x-field>", "y": "<y-field>" or ["y1","y2"], "data": [{"<x-field>": ..., "<y-field>": ...}, ...] }',
           "```",
           "Rules:",
-          "- ALWAYS include a `data` array. Build it from the user's selection if one exists; otherwise from the full dataset.",
-          "- Aggregate when categories repeat (e.g., for pie/bar by category, sum or count).",
+          "- ALWAYS include a `data` array.",
+          "- Aggregate when categories repeat.",
           "- Keep `data` under 100 points.",
-          "- You may include a brief sentence before/after the chart explaining it.",
-          "- Multiple charts are okay — emit multiple ```chart``` blocks.",
-          "- Make sure tooltips are always used to accurately show relevant values and categories.",
-          "",
-          "Be opinionated about chart choice (trends → line/area, parts-of-whole → pie, comparisons → bar, relationships → scatter).",
+          "- Be opinionated about chart choice.",
           selectionCSV
             ? `\n--- USER'S CURRENT SELECTION (${selectionLabel ?? "selection"}) ---\n${selectionCSV}`
             : `\n--- FULL DATASET CONTEXT ---\n${datasetContext}`,
@@ -69,10 +64,11 @@ export const Route = createFileRoute("/api/chat")({
           system,
           messages: await convertToModelMessages(messages as UIMessage[]),
           onError: ({ error }) => {
-            console.error("🚨 GEMINI CRASH REPORT:", error);
+            console.error("🚨 GROQ CRASH REPORT:", error);
           }
         });
 
+        // 4. Use standard data stream response
         return result.toUIMessageStreamResponse({
           originalMessages: messages as UIMessage[],
         });
