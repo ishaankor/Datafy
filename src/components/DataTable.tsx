@@ -20,79 +20,65 @@ export function selectionToCSV(ds: Dataset, sel: Selection): string {
     return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
 
-  if (sel.rows.size === 0 && sel.cols.size === 0 && sel.cells.size === 0) {
-    const head = ds.columns.map((c) => c.name).join(",");
+  const hasRows = sel.rows.size > 0;
+  const hasCols = sel.cols.size > 0;
+  const hasCells = sel.cells.size > 0;
+
+  if (!hasRows && !hasCols && !hasCells) {
+    const head = ["Row #", ...ds.columns.map((c) => c.name)].join(",");
     const body = ds.rows
-      .map((r) => ds.columns.map((c) => toCsvVal(r[c.name])).join(","))
+      .map((r, i) => {
+        const vals = [i + 1, ...ds.columns.map((c) => toCsvVal(r[c.name]))];
+        return vals.join(",");
+      })
       .join("\n");
     return `${head}\n${body}`;
   }
 
-  const colNames = ds.columns.map((c) => c.name);
-  
-  const activeColIndices = new Set<number>();
-  
-  if (sel.cols.size > 0) {
-    sel.cols.forEach((colName) => activeColIndices.add(colNames.indexOf(colName)));
-  }
-  
-  if (sel.cells.size > 0) {
-    sel.cells.forEach((k) => activeColIndices.add(Number(k.split(":")[1])));
-  }
-
-  if (sel.rows.size > 0 && sel.cols.size === 0 && sel.cells.size === 0) {
-      colNames.forEach((_, i) => activeColIndices.add(i));
-  }
-
-  if (colNames.length > 0) {
-    activeColIndices.add(0);
-  }
-
-  const colsActiveIdx = Array.from(activeColIndices).sort((a, b) => a - b);
-  const colsActiveNames = colsActiveIdx.map((i) => colNames[i]);
-
-  const activeRowIndices = new Set<number>();
-  
-  if (sel.rows.size > 0) {
-    sel.rows.forEach((r) => activeRowIndices.add(r));
-  }
-  
-  if (sel.cells.size > 0) {
-    sel.cells.forEach((k) => activeRowIndices.add(Number(k.split(":")[0])));
-  }
-
-  if (sel.cols.size > 0 && sel.rows.size === 0 && sel.cells.size === 0) {
-      ds.rows.forEach((_, i) => activeRowIndices.add(i));
-  }
-
-  const rowIdx = Array.from(activeRowIndices).sort((a, b) => a - b);
-
-  const head = colsActiveNames.join(",");
-  const body = rowIdx
-    .map((rIndex) => {
-      const rowVals = colsActiveIdx.map((cIndex) => {
-        const colName = colNames[cIndex];
-        
-        const isRowSelected = sel.rows.has(rIndex);
-        const isColSelected = sel.cols.has(colName);
-        const isCellSelected = sel.cells.has(`${rIndex}:${cIndex}`);
-        const isFirstColumn = cIndex === 0;
-
-        const isVisible = isRowSelected || isColSelected || isCellSelected || isFirstColumn;
-
-        if (!isVisible) {
-          return "-"; 
-        }
-
-        return toCsvVal(ds.rows[rIndex]?.[colName]);
+  const colSet = new Set<number>();
+  if (hasRows) {
+    ds.columns.forEach((_, i) => colSet.add(i));
+  } else {
+    if (hasCols) {
+      ds.columns.forEach((c, i) => {
+        if (sel.cols.has(c.name)) colSet.add(i);
       });
+    }
+    if (hasCells) {
+      sel.cells.forEach(k => colSet.add(Number(k.split(":")[1])));
+    }
+  }
 
-      return rowVals.join(",");
-    })
-    .join("\n");
-    
+  const rowSet = new Set<number>();
+  if (hasCols) {
+    ds.rows.forEach((_, i) => rowSet.add(i));
+  } else {
+    if (hasRows) {
+      sel.rows.forEach(r => rowSet.add(r));
+    }
+    if (hasCells) {
+      sel.cells.forEach(k => rowSet.add(Number(k.split(":")[0])));
+    }
+  }
+
+  const activeCols = Array.from(colSet).sort((a, b) => a - b);
+  const activeRows = Array.from(rowSet).sort((a, b) => a - b);
+
+  const head = ["Row #", ...activeCols.map(c => ds.columns[c].name)].join(",");
+  const body = activeRows.map(rIdx => {
+    const rowVals = activeCols.map(cIdx => {
+      const colName = ds.columns[cIdx].name;
+      
+      const isSelected = sel.rows.has(rIdx) || sel.cols.has(colName) || sel.cells.has(`${rIdx}:${cIdx}`);
+      
+      return isSelected ? toCsvVal(ds.rows[rIdx][colName]) : "-";
+    });
+    return [rIdx + 1, ...rowVals].join(",");
+  }).join("\n");
+
   return `${head}\n${body}`;
 }
+
 
 export function selectionLabel(sel: Selection): string | null {
   const parts: string[] = [];
