@@ -27,54 +27,66 @@ export function selectionToCSV(ds: Dataset, sel: Selection): string {
   if (!hasRows && !hasCols && !hasCells) {
     const head = ["Row #", ...ds.columns.map((c) => c.name)].join(",");
     const body = ds.rows
-      .map((r, i) => {
-        const vals = [i + 1, ...ds.columns.map((c) => toCsvVal(r[c.name]))];
-        return vals.join(",");
-      })
+      .map((r, i) => [i + 1, ...ds.columns.map((c) => toCsvVal(r[c.name]))].join(","))
       .join("\n");
     return `${head}\n${body}`;
   }
 
-  const colSet = new Set<number>();
-  if (hasRows) {
-    ds.columns.forEach((_, i) => colSet.add(i));
-  } else {
-    if (hasCols) {
-      ds.columns.forEach((c, i) => {
-        if (sel.cols.has(c.name)) colSet.add(i);
-      });
+  const colIndexByName = new Map(ds.columns.map((c, i) => [c.name, i]));
+  const cellSet = new Set<string>();
+
+  sel.rows.forEach((r) => {
+    if (r < 0 || r >= ds.rows.length) return;
+    ds.columns.forEach((_, c) => cellSet.add(`${r}:${c}`));
+  });
+
+  sel.cols.forEach((name) => {
+    const c = colIndexByName.get(name);
+    if (c === undefined) return;
+    ds.rows.forEach((_, r) => cellSet.add(`${r}:${c}`));
+  });
+
+  sel.cells.forEach((k) => {
+    const [rStr, cStr] = k.split(":");
+    const r = Number(rStr);
+    const c = Number(cStr);
+    if (
+      Number.isInteger(r) && Number.isInteger(c) &&
+      r >= 0 && r < ds.rows.length &&
+      c >= 0 && c < ds.columns.length
+    ) {
+      cellSet.add(k);
     }
-    if (hasCells) {
-      sel.cells.forEach(k => colSet.add(Number(k.split(":")[1])));
-    }
+  });
+
+  if (cellSet.size === 0) return "Row #\n";
+
+  const cellList = Array.from(cellSet).map((k) => {
+    const [r, c] = k.split(":").map(Number);
+    return [r, c] as const;
+  });
+
+  const activeRows = Array.from(new Set(cellList.map(([r]) => r))).sort((a, b) => a - b);
+  const activeCols = Array.from(new Set(cellList.map(([, c]) => c))).sort((a, b) => a - b);
+
+  const isDenseRectangle = cellSet.size === activeRows.length * activeCols.length;
+
+  if (isDenseRectangle) {
+    const head = ["Row #", ...activeCols.map((c) => ds.columns[c].name)].join(",");
+    const body = activeRows
+      .map((r) => [r + 1, ...activeCols.map((c) => toCsvVal(ds.rows[r][ds.columns[c].name]))].join(","))
+      .join("\n");
+    return `${head}\n${body}`;
   }
 
-  const rowSet = new Set<number>();
-  if (hasCols) {
-    ds.rows.forEach((_, i) => rowSet.add(i));
-  } else {
-    if (hasRows) {
-      sel.rows.forEach(r => rowSet.add(r));
-    }
-    if (hasCells) {
-      sel.cells.forEach(k => rowSet.add(Number(k.split(":")[0])));
-    }
-  }
-
-  const activeCols = Array.from(colSet).sort((a, b) => a - b);
-  const activeRows = Array.from(rowSet).sort((a, b) => a - b);
-
-  const head = ["Row #", ...activeCols.map(c => ds.columns[c].name)].join(",");
-  const body = activeRows.map(rIdx => {
-    const rowVals = activeCols.map(cIdx => {
-      const colName = ds.columns[cIdx].name;
-      
-      const isSelected = sel.rows.has(rIdx) || sel.cols.has(colName) || sel.cells.has(`${rIdx}:${cIdx}`);
-      
-      return isSelected ? toCsvVal(ds.rows[rIdx][colName]) : "-";
-    });
-    return [rIdx + 1, ...rowVals].join(",");
-  }).join("\n");
+  cellList.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const head = "Row #,Column,Value";
+  const body = cellList
+    .map(([r, c]) => {
+      const colName = ds.columns[c].name;
+      return [r + 1, toCsvVal(colName), toCsvVal(ds.rows[r][colName])].join(",");
+    })
+    .join("\n");
 
   return `${head}\n${body}`;
 }

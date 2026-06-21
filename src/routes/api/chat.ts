@@ -51,7 +51,7 @@ export const Route = createFileRoute("/api/chat")({
           "## How to draw charts",
           "When a chart would help, embed it as a fenced ```chart``` block containing JSON of this shape:",
           "```chart",
-          '{ "type": "line"|"bar"|"pie"|"scatter"|"area", "title": "...", "caption": "...", "colors": ["#F5D061", "#E8912E", "#F8B150"], "x": "<x-field>", "y": "<y-field>" or ["y1","y2"], "data": [{"<x-field>": ..., "<y-field>": ...}, ...] }',
+          '{ "type": "scatter"|"trendline"|"bar"|"pie"|"scatter"|"area", "title": "...", "caption": "...", "colors": ["#F5D061", "#E8912E", "#F8B150"], "x": "<x-field>", "y": "<y-field>" or ["y1","y2"], "data": [{"<x-field>": ..., "<y-field>": ...}, ...] }',
           "```",
           "Rules:",
           "- ALWAYS include tooltips in charts.",
