@@ -13,6 +13,7 @@ import {
   Area,
   XAxis,
   YAxis,
+  ZAxis,
   CartesianGrid,
   Tooltip,
   Legend,
@@ -42,12 +43,32 @@ const tooltipStyle = {
   borderRadius: 2,
   fontFamily: "JetBrains Mono, monospace",
   fontSize: 10,
+  color: "oklch(0.85 0.05 80)", // Prevents dark text on dark backgrounds
 };
 
 export function ChartRenderer({ spec }: { spec: ChartSpec }) {
   const ys = Array.isArray(spec.y) ? spec.y : spec.y ? [spec.y] : [];
-  const x = spec.x ?? "x";
   const data = spec.data ?? [];
+
+  // SMART FALLBACKS:
+  // Extract to local constants so TypeScript properly infers them as strings inside the closure
+  const specX = spec.x;
+  const specY0 = ys[0];
+
+  const x =
+    specX && data.some((d) => d[specX] !== undefined)
+      ? specX
+      : data.some((d) => d.name !== undefined)
+      ? "name"
+      : specX ?? "x";
+
+  // For Pie charts: AI frequently puts the numerical total in `"value"` instead of `ys[0]`.
+  const pieY =
+    specY0 && data.some((d) => d[specY0] !== undefined)
+      ? specY0
+      : data.some((d) => d.value !== undefined)
+      ? "value"
+      : specY0 ?? "y";
 
   const renderInner = () => {
     switch (spec.type) {
@@ -92,7 +113,7 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
       case "pie":
         return (
           <PieChart>
-            <Pie data={data} dataKey={ys[0] ?? "value"} nameKey={x} innerRadius={40} outerRadius={75} paddingAngle={2} stroke="oklch(0.10 0.005 60)">
+            <Pie data={data} dataKey={pieY} nameKey={x} innerRadius={40} outerRadius={75} paddingAngle={2} stroke="oklch(0.10 0.005 60)">
               {data.map((_, i) => (
                 <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
               ))}
@@ -105,8 +126,9 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
         return (
           <ScatterChart margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
             <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" />
-            <XAxis dataKey={x} stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
-            <YAxis dataKey={ys[0] ?? "y"} stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
+            <XAxis dataKey={x} name={x} stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
+            <YAxis dataKey={ys[0] ?? "y"} name={ys[0] ?? "y"} stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
+            <ZAxis dataKey="name" name="Row" />
             <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: GOLD, strokeWidth: 1 }} />
             <Scatter data={data} fill={GOLD} />
           </ScatterChart>
