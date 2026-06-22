@@ -59,18 +59,13 @@ export const Route = createFileRoute("/api/chat")({
           }
 
           const data = await pythonResponse.json();
+          const fullText = data.response || "";
 
           const stream = new ReadableStream({
-            async start(controller) {
+            start(controller) {
               const encoder = new TextEncoder();
-              const text = data.response || "";
-              
-              const chunkSize = 15; 
-              for (let i = 0; i < text.length; i += chunkSize) {
-                const chunk = text.slice(i, i + chunkSize);
-                controller.enqueue(encoder.encode(chunk));
-                await new Promise((resolve) => setTimeout(resolve, 15)); 
-              }
+              const formatted = `0:${JSON.stringify(fullText)}\n`;
+              controller.enqueue(encoder.encode(formatted));
               controller.close();
             },
           });
@@ -78,7 +73,7 @@ export const Route = createFileRoute("/api/chat")({
           return new Response(stream, {
             headers: {
               "Content-Type": "text/plain; charset=utf-8",
-              // "x-vercel-ai-data-stream": "v1",
+              "x-vercel-ai-data-stream": "v1",
             },
           });
         } catch (error) {
