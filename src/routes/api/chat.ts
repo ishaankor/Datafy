@@ -67,7 +67,8 @@ export const Route = createFileRoute("/api/chat")({
               
               const chunkSize = 15; 
               for (let i = 0; i < text.length; i += chunkSize) {
-                controller.enqueue(encoder.encode(text.slice(i, i + chunkSize)));
+                const chunk = text.slice(i, i + chunkSize);
+                controller.enqueue(encoder.encode(`0:${JSON.stringify(chunk)}\n`));
                 await new Promise((resolve) => setTimeout(resolve, 15)); 
               }
               controller.close();
