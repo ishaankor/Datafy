@@ -45,10 +45,7 @@ function Index() {
     [dataset, selection],
   );
 
-  const selLabel = useMemo(
-      () => selectionLabel(selection, dataset?.columns), 
-      [selection, dataset]
-    );
+  const selLabel = useMemo(() => selectionLabel(selection), [selection]);
 
   if (!dataset) {
     return (
