@@ -42,7 +42,7 @@ export const Route = createFileRoute("/api/chat")({
         };
 
         try {
-          const backendUrl = process.env.PYTHON_BACKEND_URL;
+          const backendUrl = "https://datafy-brain.onrender.com/chat";
 
           const pythonResponse = await fetch(backendUrl as string, {
             method: "POST",
