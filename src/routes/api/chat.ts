@@ -14,7 +14,7 @@ export const Route = createFileRoute("/api/chat")({
       POST: async ({ request }: { request: Request }) => {
         const body = (await request.json()) as ChatRequestBody;
 
-        console.log("🚨 PROXYING PAYLOAD TO RENDER:", { 
+        console.log("🚨 PROXYING PAYLOAD TO BACKEND:", { 
           hasMessages: !!body.messages, 
           datasetContextLength: body.datasetContext?.length || 0,
           selectionCSV: body.selectionCSV ? "HAS SELECTION" : "NO SELECTION",
@@ -25,14 +25,31 @@ export const Route = createFileRoute("/api/chat")({
           return new Response("Messages are required", { status: 400 });
         }
 
+        const normalizedMessages = body.messages.map((m) => {
+          let textContent = m.content;
+          if (!textContent && Array.isArray(m.parts)) {
+            textContent = m.parts.map((p: any) => p.text || "").join("");
+          }
+          return {
+            role: m.role,
+            content: textContent || "",
+          };
+        });
+
+        const pythonPayload = {
+          ...body,
+          messages: normalizedMessages,
+        };
+
         try {
-          // 1. Forward the entire payload to your live Python FastAPI backend
-          const pythonResponse = await fetch("https://datafy-brain.onrender.com/chat", {
+          const backendUrl = process.env.PYTHON_BACKEND_URL;
+
+          const pythonResponse = await fetch(backendUrl as string, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(body),
+            body: JSON.stringify(pythonPayload),
           });
 
           if (!pythonResponse.ok) {
@@ -59,7 +76,7 @@ export const Route = createFileRoute("/api/chat")({
           });
         } catch (error) {
           console.error("🚨 Connection Error:", error);
-          return new Response("Failed to connect to Python backend. Is your Render server awake?", { status: 500 });
+          return new Response("Failed to connect to Python backend. Is it running?", { status: 500 });
         }
       },
     },
