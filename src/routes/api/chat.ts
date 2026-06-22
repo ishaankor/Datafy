@@ -61,9 +61,15 @@ export const Route = createFileRoute("/api/chat")({
           const data = await pythonResponse.json();
 
           const stream = new ReadableStream({
-            start(controller) {
-              const textChunk = `0:${JSON.stringify(data.response)}\n`;
-              controller.enqueue(new TextEncoder().encode(textChunk));
+            async start(controller) {
+              const encoder = new TextEncoder();
+              const text = data.response || "";
+              
+              const chunkSize = 15; 
+              for (let i = 0; i < text.length; i += chunkSize) {
+                controller.enqueue(encoder.encode(text.slice(i, i + chunkSize)));
+                await new Promise((resolve) => setTimeout(resolve, 15)); 
+              }
               controller.close();
             },
           });
