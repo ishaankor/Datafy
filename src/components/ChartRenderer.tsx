@@ -13,7 +13,6 @@ import {
   Area,
   XAxis,
   YAxis,
-  ZAxis,
   CartesianGrid,
   Tooltip,
   Legend,
@@ -43,15 +42,40 @@ const tooltipStyle = {
   borderRadius: 2,
   fontFamily: "JetBrains Mono, monospace",
   fontSize: 10,
-  color: "oklch(0.85 0.05 80)", // Prevents dark text on dark backgrounds
+  color: "oklch(0.85 0.05 80)",
+};
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const title = data.name || payload[0].name || label;
+
+    return (
+      <div style={{ ...tooltipStyle, padding: "8px" }}>
+        {title && (
+          <div style={{ fontWeight: "bold", marginBottom: "4px", paddingBottom: "4px", borderBottom: "1px solid oklch(0.78 0.13 80 / 0.2)" }}>
+            {title}
+          </div>
+        )}
+        {payload.map((entry: any, index: number) => {
+          const showName = entry.name && entry.name !== title;
+          return (
+            <div key={index} style={{ color: entry.color || GOLD, marginTop: "2px" }}>
+              {showName && <span style={{ opacity: 0.8 }}>{entry.name}: </span>}
+              <span style={{ fontWeight: 500 }}>{entry.value}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+  return null;
 };
 
 export function ChartRenderer({ spec }: { spec: ChartSpec }) {
   const ys = Array.isArray(spec.y) ? spec.y : spec.y ? [spec.y] : [];
   const data = spec.data ?? [];
 
-  // SMART FALLBACKS:
-  // Extract to local constants so TypeScript properly infers them as strings inside the closure
   const specX = spec.x;
   const specY0 = ys[0];
 
@@ -62,7 +86,6 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
       ? "name"
       : specX ?? "x";
 
-  // For Pie charts: AI frequently puts the numerical total in `"value"` instead of `ys[0]`.
   const pieY =
     specY0 && data.some((d) => d[specY0] !== undefined)
       ? specY0
@@ -78,7 +101,7 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
             <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" vertical={false} />
             <XAxis dataKey={x} stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
             <YAxis stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
-            <Tooltip contentStyle={tooltipStyle} />
+            <Tooltip content={<CustomTooltip />} />
             {ys.length > 1 && <Legend wrapperStyle={{ fontSize: 10 }} />}
             {ys.map((k, i) => (
               <Line key={k} type="monotone" dataKey={k} stroke={PALETTE[i % PALETTE.length]} strokeWidth={1.5} dot={{ r: 2 }} />
@@ -91,7 +114,7 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
             <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" vertical={false} />
             <XAxis dataKey={x} stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
             <YAxis stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
-            <Tooltip contentStyle={tooltipStyle} />
+            <Tooltip content={<CustomTooltip />} />
             {ys.map((k, i) => (
               <Area key={k} type="monotone" dataKey={k} stroke={PALETTE[i % PALETTE.length]} fill={PALETTE[i % PALETTE.length]} fillOpacity={0.25} />
             ))}
@@ -103,7 +126,7 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
             <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" vertical={false} />
             <XAxis dataKey={x} stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
             <YAxis stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
-            <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "oklch(0.78 0.13 80 / 0.08)" }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "oklch(0.78 0.13 80 / 0.08)" }} />
             {ys.length > 1 && <Legend wrapperStyle={{ fontSize: 10 }} />}
             {ys.map((k, i) => (
               <Bar key={k} dataKey={k} fill={PALETTE[i % PALETTE.length]} radius={[2, 2, 0, 0]} />
@@ -118,7 +141,7 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
                 <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
               ))}
             </Pie>
-            <Tooltip contentStyle={tooltipStyle} />
+            <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ fontSize: 10 }} />
           </PieChart>
         );
@@ -128,8 +151,7 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
             <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" />
             <XAxis dataKey={x} name={x} stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
             <YAxis dataKey={ys[0] ?? "y"} name={ys[0] ?? "y"} stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
-            <ZAxis dataKey="name" name="Row" />
-            <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: GOLD, strokeWidth: 1 }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ stroke: GOLD, strokeWidth: 1 }} />
             <Scatter data={data} fill={GOLD} />
           </ScatterChart>
         );
@@ -155,10 +177,6 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
   );
 }
 
-/**
- * Extract ```chart ... ``` fenced JSON blocks from text.
- * Returns an array of segments — each is either text or a chart spec.
- */
 export type Segment =
   | { kind: "text"; text: string }
   | { kind: "chart"; spec: ChartSpec }
