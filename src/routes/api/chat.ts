@@ -3,8 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 
 type ChatRequestBody = {
   messages?: any[];
-  datasetContext?: string;
-  selectionCSV?: string;
+  datasetContext?: string | null;
+  selectionCSV?: string | null;
   selectionLabel?: string | null;
 };
 
@@ -20,20 +20,32 @@ export const Route = createFileRoute("/api/chat")({
           });
         }
 
+        const pythonPayload = {
+          messages: body.messages.map(m => ({
+            role: m.role === "assistant" ? "assistant" : "user",
+            content: typeof m.content === "string" ? m.content : ""
+          })),
+          datasetContext: body.datasetContext || "",
+          selectionCSV: body.selectionCSV || "",
+          selectionLabel: body.selectionLabel || ""
+        };
+
         try {
-          const backendUrl = (process.env.PYTHON_BACKEND_URL && process.env.PYTHON_BACKEND_URL !== "undefined") 
-            ? process.env.PYTHON_BACKEND_URL 
-            : "https://datafy-brain.onrender.com/chat";
+          let backendUrl = process.env.PYTHON_BACKEND_URL as string;
+          if (!backendUrl || backendUrl === "undefined" || backendUrl.trim() === "") {
+            backendUrl = "https://datafy-brain.onrender.com/chat";
+          }
 
           const pythonResponse = await fetch(backendUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
+            body: JSON.stringify(pythonPayload),
           });
 
           if (!pythonResponse.ok) {
-            console.error("🚨 Python Backend Error");
-            return new Response(JSON.stringify({ response: "Error from Python Agent" }), { 
+            const errorText = await pythonResponse.text();
+            console.error(`🚨 Python Backend Error [${pythonResponse.status}]:`, errorText);
+            return new Response(JSON.stringify({ response: "Error from Python Agent." }), { 
               status: 500, headers: { "Content-Type": "application/json" } 
             });
           }
@@ -47,7 +59,7 @@ export const Route = createFileRoute("/api/chat")({
           });
         } catch (error) {
           console.error("🚨 Connection Error:", error);
-          return new Response(JSON.stringify({ response: "Failed to connect to Python backend. Is it running?" }), { 
+          return new Response(JSON.stringify({ response: "Failed to connect to Python backend." }), { 
             status: 500, headers: { "Content-Type": "application/json" } 
           });
         }
