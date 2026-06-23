@@ -1,96 +1,123 @@
-import { useEffect, useRef, useState, useMemo } from "react";
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIMessage } from "ai";
-import { Send, X, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { parseChartSegments, ChartRenderer } from "@/components/ChartRenderer";
+import React, { useState, useEffect, useRef } from 'react';
+import { Button } from './ui/button';
+import { X, Send, Sparkles } from 'lucide-react'; 
+import { parseChartSegments, ChartRenderer } from '@/components/ChartRenderer';
 
-interface Props {
+interface AIChatProps {
   open: boolean;
   onClose: () => void;
-  datasetContext: string;
-  selectionCSV: string;
-  selectionLabel: string | null;
-  pendingPrompt: string | null;
-  onPromptConsumed: () => void;
+  datasetContext?: string;
+  selectionCSV?: string;
+  selectionLabel?: string | null;
+  pendingPrompt?: string | null;
+  onPromptConsumed?: () => void;
 }
 
-export function AIChat({
+type Message = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+export const AIChat = ({
   open,
   onClose,
   datasetContext,
   selectionCSV,
   selectionLabel,
   pendingPrompt,
-  onPromptConsumed,
-}: Props) {
+  onPromptConsumed
+}: AIChatProps) => {
+
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
   const scrollRef = useRef<HTMLDivElement>(null);
-  const chatApiUrl = "/api/chat";
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const hasRealSelection = Boolean(selectionLabel && selectionLabel.trim() !== "");
   const activeSelectionCSV = hasRealSelection ? selectionCSV : undefined;
   const activeSelectionLabel = hasRealSelection ? selectionLabel : undefined;
 
-  const transport = useMemo(() => new DefaultChatTransport({
-    api: chatApiUrl,
-  }), [chatApiUrl]);
-
-  const { messages, sendMessage, status } = useChat({ transport });
-
+  const liveContext = useRef({ datasetContext, activeSelectionCSV, activeSelectionLabel });
   useEffect(() => {
-    if (pendingPrompt && open) {
-      sendMessage(
-        { text: pendingPrompt },
-        {
-          body: {
-            datasetContext,
-            selectionCSV: activeSelectionCSV,
-            selectionLabel: activeSelectionLabel,
-          }
-        }
-      );
-      onPromptConsumed();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingPrompt, open]);
+    liveContext.current = { datasetContext, activeSelectionCSV, activeSelectionLabel };
+  }, [datasetContext, activeSelectionCSV, activeSelectionLabel]);
 
+  // Focus input when opened
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
 
+  // Auto-scroll to bottom
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, status]);
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages, isLoading]);
+
+  const append = async (content: string) => {
+    const userMsg: Message = { id: crypto.randomUUID(), role: 'user', content };
+    setMessages(prev => [...prev, userMsg]);
+    setIsLoading(true);
+
+    try {
+      const payload = {
+        messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
+        datasetContext: liveContext.current.datasetContext,
+        selectionCSV: liveContext.current.activeSelectionCSV,
+        selectionLabel: liveContext.current.activeSelectionLabel,
+      };
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      
+      setMessages(prev => [...prev, { 
+        id: crypto.randomUUID(), 
+        role: 'assistant', 
+        content: data.response || "No response generated." 
+      }]);
+    } catch (error) {
+      setMessages(prev => [...prev, { 
+        id: crypto.randomUUID(), 
+        role: 'assistant', 
+        content: "Error communicating with the Python backend." 
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Consume pending prompts from the data table highlighting
+  useEffect(() => {
+    if (pendingPrompt && open) {
+      append(pendingPrompt);
+      onPromptConsumed?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPrompt, open]);
 
   const submit = () => {
+    if (!input.trim() || isLoading) return;
     const text = input.trim();
-    if (!text || status === "streaming" || status === "submitted") return;
-    
-    sendMessage(
-      { text },
-      {
-        body: {
-          datasetContext,
-          selectionCSV: activeSelectionCSV,
-          selectionLabel: activeSelectionLabel,
-        }
-      }
-    );
-    setInput("");
+    setInput(""); // Clear input immediately
+    append(text);
   };
 
   const suggestions = activeSelectionLabel
     ? ["Plot this", "What stands out?", "Compare these"]
     : ["Show me a trend", "What's interesting here?", "Suggest a chart"];
 
+  if (!open) return null;
+
   return (
-    <aside
-      className={`fixed top-0 right-0 h-screen w-full sm:w-[460px] bg-canvas border-l border-border shadow-noir z-40 flex flex-col transition-transform duration-300 ${
-        open ? "translate-x-0" : "translate-x-full"
-      }`}
-    >
+    <aside className="fixed top-0 right-0 h-screen w-full sm:w-[460px] bg-canvas border-l border-border shadow-noir z-40 flex flex-col transition-transform duration-300">
       <header className="flex items-center justify-between px-6 py-4 border-b border-border">
         <div>
           <p className="eyebrow text-[0.6rem]">Sidekick</p>
@@ -110,8 +137,7 @@ export function AIChat({
           <div className="text-center py-10">
             <Sparkles className="w-7 h-7 text-gold mx-auto mb-4 opacity-70" />
             <p className="font-display text-lg text-foreground/90 leading-snug max-w-[300px] mx-auto">
-              Highlight any part of the table and I'll plot it, summarize it, or
-              tell you what's interesting.
+              Highlight any part of the table and I'll plot it, summarize it, or tell you what's interesting.
             </p>
             <p className="text-xs text-muted-foreground/70 mt-4">
               Or just ask me anything about your data.
@@ -119,50 +145,41 @@ export function AIChat({
           </div>
         )}
 
-        {messages.map((m: UIMessage) => {
-          const text = m.parts
-            .map((p) => (p.type === "text" ? p.text : ""))
-            .join("");
-          if (m.role === "user") {
-            return (
-              <div key={m.id} className="flex justify-end">
-                <div className="max-w-[88%] bg-gold text-ink px-3.5 py-2 rounded-sm text-sm">
-                  {text}
-                </div>
-              </div>
-            );
-          }
-          const segments = parseChartSegments(text);
+        {messages.map((m) => {
+          const segments = m.role === 'assistant' ? parseChartSegments(m.content) : [];
+          
           return (
-            <div key={m.id} className="space-y-1">
-              <p className="eyebrow text-[0.55rem]">Sidekick</p>
-              <div className="text-sm leading-relaxed text-foreground/90">
-                {segments.map((seg, i) => {
-                  if (seg.kind === "chart") return <ChartRenderer key={i} spec={seg.spec} />;
-                  if (seg.kind === "error")
-                    return (
-                      <p key={i} className="text-xs text-destructive italic">
-                        {seg.text}
-                      </p>
-                    );
-                  return (
-                    <p key={i} className="whitespace-pre-wrap">
-                      {seg.text}
-                    </p>
-                  );
-                })}
-              </div>
+            <div key={m.id} className={m.role === 'user' ? "flex justify-end" : "space-y-1"}>
+              {m.role === 'user' ? (
+                <div className="max-w-[88%] bg-gold text-ink px-3.5 py-2 rounded-sm text-sm">
+                  {m.content}
+                </div>
+              ) : (
+                <>
+                  <p className="eyebrow text-[0.55rem]">Sidekick</p>
+                  <div className="text-sm leading-relaxed text-foreground/90 space-y-4">
+                    {segments.map((seg, i) => {
+                      if (seg.kind === "chart") return <ChartRenderer key={i} spec={seg.spec} />;
+                      if (seg.kind === "error") return <p key={i} className="text-xs text-destructive italic">{seg.text}</p>;
+                      return (
+                        <p key={i} className="whitespace-pre-wrap">
+                          {seg.text}
+                        </p>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           );
         })}
 
-        {(status === "submitted" || status === "streaming") &&
-          messages[messages.length - 1]?.role === "user" && (
-            <div className="space-y-1">
-              <p className="eyebrow text-[0.55rem]">Sidekick</p>
-              <p className="text-sm text-muted-foreground italic">Looking…</p>
-            </div>
-          )}
+        {isLoading && (
+          <div className="space-y-1">
+            <p className="eyebrow text-[0.55rem]">Sidekick</p>
+            <p className="text-sm text-muted-foreground italic">Thinking and analyzing data...</p>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-border p-4 space-y-3">
@@ -175,17 +192,10 @@ export function AIChat({
           {suggestions.map((s) => (
             <button
               key={s}
-              onClick={() => sendMessage(
-                { text: s },
-                {
-                  body: {
-                    datasetContext,
-                    selectionCSV: activeSelectionCSV,
-                    selectionLabel: activeSelectionLabel,
-                  }
-                }
-              )}
-              disabled={status === "streaming" || status === "submitted"}
+              onClick={() => {
+                if (!isLoading) append(s);
+              }}
+              disabled={isLoading}
               className="text-[11px] border border-border text-muted-foreground hover:text-gold hover:border-gold/40 px-2.5 py-1 rounded-sm transition disabled:opacity-50"
             >
               {s}
@@ -198,18 +208,18 @@ export function AIChat({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
+              if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 submit();
               }
             }}
-            placeholder={activeSelectionLabel ? "Ask about the selection…" : "Ask me anything about the data…"}
+            placeholder={activeSelectionLabel ? "Ask about the selection..." : "Ask me anything about the data..."}
             rows={2}
             className="flex-1 bg-ink/50 border border-border rounded-sm p-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-gold/50 resize-none"
           />
           <Button
             onClick={submit}
-            disabled={!input.trim() || status === "streaming" || status === "submitted"}
+            disabled={!input.trim() || isLoading}
             className="bg-gold hover:bg-gold-soft text-ink rounded-sm h-[60px] w-[60px] p-0"
           >
             <Send className="w-4 h-4" />
@@ -218,4 +228,4 @@ export function AIChat({
       </div>
     </aside>
   );
-}
+};
