@@ -29,12 +29,10 @@ export function AIChat({
   const scrollRef = useRef<HTMLDivElement>(null);
   const chatApiUrl = "/api/chat";
 
-  // THE GATEKEEPER: Ensure empty selections don't flood the AI with full-table duplicates
   const hasRealSelection = Boolean(selectionLabel && selectionLabel.trim() !== "");
   const activeSelectionCSV = hasRealSelection ? selectionCSV : undefined;
   const activeSelectionLabel = hasRealSelection ? selectionLabel : undefined;
 
-  // Memoize the transport so it doesn't rebuild and lose state on re-renders
   const transport = useMemo(() => new DefaultChatTransport({
     api: chatApiUrl,
   }), [chatApiUrl]);
@@ -46,7 +44,6 @@ export function AIChat({
       sendMessage(
         { text: pendingPrompt },
         {
-          // FIX: Pass the absolute latest dynamic data here to bypass the cache
           body: {
             datasetContext,
             selectionCSV: activeSelectionCSV,
@@ -74,7 +71,6 @@ export function AIChat({
     sendMessage(
       { text },
       {
-        // FIX: Pass the absolute latest dynamic data here to bypass the cache
         body: {
           datasetContext,
           selectionCSV: activeSelectionCSV,
@@ -182,7 +178,6 @@ export function AIChat({
               onClick={() => sendMessage(
                 { text: s },
                 {
-                  // FIX: Pass the absolute latest dynamic data here
                   body: {
                     datasetContext,
                     selectionCSV: activeSelectionCSV,

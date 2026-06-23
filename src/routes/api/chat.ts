@@ -59,23 +59,24 @@ export const Route = createFileRoute("/api/chat")({
           }
 
           const data = await pythonResponse.json();
-          const fullText = data.response || "";
+          const encoder = new TextEncoder();
 
-          const stream = new ReadableStream({
-            start(controller) {
-              const encoder = new TextEncoder();
-              const formatted = `0:${JSON.stringify(fullText)}\n`;
-              controller.enqueue(encoder.encode(formatted));
-              controller.close();
-            },
-          });
-
-          return new Response(stream, {
-            headers: {
-              "Content-Type": "text/plain; charset=utf-8",
-              "x-vercel-ai-data-stream": "v1",
-            },
-          });
+          return new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.enqueue(
+                  encoder.encode(`0:${JSON.stringify(data.response)}\n`)
+                );
+                controller.close();
+              },
+            }),
+            {
+              headers: {
+                "Content-Type": "text/plain",
+                "x-vercel-ai-data-stream": "v1",
+              },
+            }
+          );
         } catch (error) {
           console.error("🚨 Connection Error:", error);
           return new Response("Failed to connect to Python backend. Is it running?", { status: 500 });
