@@ -14,72 +14,42 @@ export const Route = createFileRoute("/api/chat")({
       POST: async ({ request }: { request: Request }) => {
         const body = (await request.json()) as ChatRequestBody;
 
-        console.log("🚨 PROXYING PAYLOAD TO BACKEND:", { 
-          hasMessages: !!body.messages, 
-          datasetContextLength: body.datasetContext?.length || 0,
-          selectionCSV: body.selectionCSV ? "HAS SELECTION" : "NO SELECTION",
-          selectionLabel: body.selectionLabel || "NO LABEL"
-        });
-
         if (!Array.isArray(body.messages) || body.messages.length === 0) {
-          return new Response("Messages are required", { status: 400 });
+          return new Response(JSON.stringify({ response: "Messages are required" }), { 
+            status: 400, headers: { "Content-Type": "application/json" } 
+          });
         }
 
-        const normalizedMessages = body.messages.map((m) => {
-          let textContent = m.content;
-          if (!textContent && Array.isArray(m.parts)) {
-            textContent = m.parts.map((p: any) => p.text || "").join("");
-          }
-          return {
-            role: m.role,
-            content: textContent || "",
-          };
-        });
-
-        const pythonPayload = {
-          ...body,
-          messages: normalizedMessages,
-        };
-
         try {
-          const backendUrl = "https://datafy-brain.onrender.com/chat";
+          const backendUrl = (process.env.PYTHON_BACKEND_URL && process.env.PYTHON_BACKEND_URL !== "undefined") 
+            ? process.env.PYTHON_BACKEND_URL 
+            : "https://datafy-brain.onrender.com/chat";
 
-          const pythonResponse = await fetch(backendUrl as string, {
+          const pythonResponse = await fetch(backendUrl, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(pythonPayload),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
           });
 
           if (!pythonResponse.ok) {
-            const errorText = await pythonResponse.text();
-            console.error("🚨 Python Backend Error:", errorText);
-            return new Response("Error from Python Agent", { status: 500 });
+            console.error("🚨 Python Backend Error");
+            return new Response(JSON.stringify({ response: "Error from Python Agent" }), { 
+              status: 500, headers: { "Content-Type": "application/json" } 
+            });
           }
 
           const data = await pythonResponse.json();
-          const encoder = new TextEncoder();
 
-          return new Response(
-            new ReadableStream({
-              start(controller) {
-                controller.enqueue(
-                  encoder.encode(`0:${JSON.stringify(data.response)}\n`)
-                );
-                controller.close();
-              },
-            }),
-            {
-              headers: {
-                "Content-Type": "text/plain",
-                "x-vercel-ai-data-stream": "v1",
-              },
-            }
-          );
+          return new Response(JSON.stringify(data), {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
         } catch (error) {
           console.error("🚨 Connection Error:", error);
-          return new Response("Failed to connect to Python backend. Is it running?", { status: 500 });
+          return new Response(JSON.stringify({ response: "Failed to connect to Python backend. Is it running?" }), { 
+            status: 500, headers: { "Content-Type": "application/json" } 
+          });
         }
       },
     },
