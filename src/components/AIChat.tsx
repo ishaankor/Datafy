@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { X, Send, Sparkles } from 'lucide-react'; 
-import { parseChartSegments, ChartRenderer } from '@/components/ChartRenderer';
+import { parseChartSegments, ChartRenderer, ImageRenderer } from '@/components/ChartRenderer';
 
 interface AIChatProps {
   open: boolean;
@@ -45,12 +45,10 @@ export const AIChat = ({
     liveContext.current = { datasetContext, activeSelectionCSV, activeSelectionLabel };
   }, [datasetContext, activeSelectionCSV, activeSelectionLabel]);
 
-  // Focus input when opened
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -94,7 +92,6 @@ export const AIChat = ({
     }
   };
 
-  // Consume pending prompts from the data table highlighting
   useEffect(() => {
     if (pendingPrompt && open) {
       append(pendingPrompt);
@@ -106,7 +103,7 @@ export const AIChat = ({
   const submit = () => {
     if (!input.trim() || isLoading) return;
     const text = input.trim();
-    setInput(""); // Clear input immediately
+    setInput("");
     append(text);
   };
 
@@ -160,6 +157,7 @@ export const AIChat = ({
                   <div className="text-sm leading-relaxed text-foreground/90 space-y-4">
                     {segments.map((seg, i) => {
                       if (seg.kind === "chart") return <ChartRenderer key={i} spec={seg.spec} />;
+                      if (seg.kind === "image") return <ImageRenderer key={i} alt={seg.alt} src={seg.src} />;
                       if (seg.kind === "error") return <p key={i} className="text-xs text-destructive italic">{seg.text}</p>;
                       return (
                         <p key={i} className="whitespace-pre-wrap">

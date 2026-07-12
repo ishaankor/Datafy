@@ -72,6 +72,25 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+// ---------------------------------------------------------
+// NEW: Image Renderer for Matplotlib Base64 Outputs
+// ---------------------------------------------------------
+export function ImageRenderer({ alt, src }: { alt: string; src: string }) {
+  return (
+    <div className="my-3 bg-ink/60 border border-gold/30 rounded-sm p-3">
+      {alt && (
+        <p className="font-display text-base text-gold-soft leading-tight mb-2">{alt}</p>
+      )}
+      <div className="flex justify-center bg-white/5 rounded-sm p-2">
+        <img src={src} alt={alt} className="max-w-full h-auto rounded-sm object-contain" />
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------
+// LEGACY: Recharts Renderer for old JSON configs
+// ---------------------------------------------------------
 export function ChartRenderer({ spec }: { spec: ChartSpec }) {
   const ys = Array.isArray(spec.y) ? spec.y : spec.y ? [spec.y] : [];
   const data = spec.data ?? [];
@@ -177,28 +196,51 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
   );
 }
 
+// ---------------------------------------------------------
+// UPDATED PARSER: Handles both old Recharts and new Base64 Images
+// ---------------------------------------------------------
 export type Segment =
   | { kind: "text"; text: string }
   | { kind: "chart"; spec: ChartSpec }
+  | { kind: "image"; alt: string; src: string } // Added Image Segment
   | { kind: "error"; text: string };
 
 export function parseChartSegments(text: string): Segment[] {
   const segments: Segment[] = [];
-  const re = /```chart\s*\n([\s\S]*?)```/g;
+  
+  // This regex matches EITHER the old markdown json block OR the new markdown base64 image
+  // Group 1: JSON Spec string
+  // Group 2: Image Alt Text
+  // Group 3: Image Base64 Src String
+  const re = /(?:```chart\s*\n([\s\S]*?)```)|(?:!\[([^\]]*)\]\((data:image\/[^)]+)\))/g;
+  
   let last = 0;
   let m: RegExpExecArray | null;
+  
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) {
       segments.push({ kind: "text", text: text.slice(last, m.index) });
     }
-    try {
-      const spec = JSON.parse(m[1]) as ChartSpec;
-      segments.push({ kind: "chart", spec });
-    } catch {
-      segments.push({ kind: "error", text: "Could not parse chart spec." });
+    
+    if (m[1]) {
+      // It's a legacy JSON chart block
+      try {
+        const spec = JSON.parse(m[1]) as ChartSpec;
+        segments.push({ kind: "chart", spec });
+      } catch {
+        segments.push({ kind: "error", text: "Could not parse chart spec." });
+      }
+    } else if (m[2] !== undefined && m[3]) {
+      // It's a new Base64 Matplotlib image
+      segments.push({ kind: "image", alt: m[2], src: m[3] });
     }
+    
     last = re.lastIndex;
   }
-  if (last < text.length) segments.push({ kind: "text", text: text.slice(last) });
+  
+  if (last < text.length) {
+    segments.push({ kind: "text", text: text.slice(last) });
+  }
+  
   return segments;
 }
