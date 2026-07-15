@@ -68,7 +68,7 @@ export const AIChat = ({
         selectionLabel: liveContext.current.activeSelectionLabel,
       };
 
-      const res = await fetch('/api/chat', {
+      const res = await fetch('https://datafy-brain.onrender.com/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
