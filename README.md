@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="300" height="300" src="./public/favicon.ico" alt="logo">
+  <img width="150" height="150" src="./public/favicon.ico" alt="logo">
 </p>
 
 > An autonomous, AI-driven data science copilot that transforms raw data into an interactive, visual, and analytical canvas.
