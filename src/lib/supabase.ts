@@ -1,19 +1,19 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl =
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_URL) ||
+  import.meta.env.VITE_SUPABASE_URL ||
   (typeof process !== "undefined" && process.env?.VITE_SUPABASE_URL) ||
-  (typeof process !== "undefined" && process.env?.SUPABASE_URL);
+  "https://ihzqkqwodhvvetydwivi.supabase.co";
 
 const supabaseAnonKey =
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_ANON_KEY) ||
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
   (typeof process !== "undefined" && process.env?.VITE_SUPABASE_ANON_KEY) ||
-  (typeof process !== "undefined" && process.env?.SUPABASE_ANON_KEY);
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloenFrcXdvZGh2dmV0eWR3aXZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MzUxNzUsImV4cCI6MjEwMTExMTE3NX0.TyET-fgLyjt2PonmMmsrT7exaKA97WjRUzFRmJBseoY";
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
 export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(supabaseUrl!, supabaseAnonKey!)
+  ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
 export interface SavedDataset {
