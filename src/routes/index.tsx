@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MessageCircle, RotateCcw } from "lucide-react";
 import { DataInput } from "@/components/DataInput";
 import {
@@ -10,7 +10,12 @@ import {
   type Selection,
 } from "@/components/DataTable";
 import { AIChat } from "@/components/AIChat";
+import { UserMenu } from "@/components/UserMenu";
+import { AuthModal } from "@/components/AuthModal";
+import { DatasetHistoryDrawer } from "@/components/DatasetHistoryDrawer";
 import { parseCSV, datasetSummary } from "@/lib/dataset";
+import { supabase, saveDatasetToSupabase } from "@/lib/supabase";
+import { type User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -21,9 +26,33 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [csv, setCsv] = useState<string | null>(null);
   const [name, setName] = useState("Untitled");
+  const [activeDatasetId, setActiveDatasetId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(true);
   const [selection, setSelection] = useState<Selection>(emptySelection());
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+
+  // Auth & Session State
+  const [user, setUser] = useState<User | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    // Get current user session
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+
+    // Listen to Auth State Changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const dataset = useMemo(() => {
     if (!csv) return null;
@@ -34,6 +63,36 @@ function Index() {
       return null;
     }
   }, [csv]);
+
+  const handleDatasetLoad = async (text: string, datasetName: string, loadedDatasetId?: string) => {
+    setCsv(text);
+    setName(datasetName);
+    setSelection(emptySelection());
+
+    if (loadedDatasetId) {
+      setActiveDatasetId(loadedDatasetId);
+      return;
+    }
+
+    // Auto-save to Supabase if logged in
+    if (user && supabase) {
+      try {
+        const parsed = parseCSV(text);
+        const saved = await saveDatasetToSupabase(
+          datasetName,
+          text,
+          parsed.rows.length,
+          parsed.columns.length,
+        );
+        if (saved) {
+          setActiveDatasetId(saved.id);
+          toast.success("Dataset saved to your account!");
+        }
+      } catch (err) {
+        console.error("Auto-save failed:", err);
+      }
+    }
+  };
 
   const datasetContext = useMemo(
     () => (dataset ? datasetSummary(dataset) : ""),
@@ -49,13 +108,32 @@ function Index() {
 
   if (!dataset) {
     return (
-      <main className="bg-background text-foreground min-h-screen">
-        <DataInput
-          onLoad={(text, n) => {
-            setCsv(text);
-            setName(n);
-            setSelection(emptySelection());
+      <main className="bg-background text-foreground min-h-screen relative">
+        <header className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-10">
+          <span className="font-display text-xl font-semibold">
+            Datafy<span className="text-gold">.</span>
+          </span>
+          <UserMenu
+            user={user}
+            onOpenAuth={() => setAuthOpen(true)}
+            onOpenHistory={() => setHistoryOpen(true)}
+          />
+        </header>
+
+        <DataInput onLoad={(text, n) => handleDatasetLoad(text, n)} />
+
+        <AuthModal
+          open={authOpen}
+          onOpenChange={setAuthOpen}
+          onSuccess={() => {
+            setHistoryOpen(true);
           }}
+        />
+
+        <DatasetHistoryDrawer
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          onSelectDataset={(text, datasetName, id) => handleDatasetLoad(text, datasetName, id)}
         />
       </main>
     );
@@ -66,8 +144,8 @@ function Index() {
       <nav className="bg-background/90 backdrop-blur border-b border-border animate-fade-in" style={{ animationDelay: "80ms", animationFillMode: "backwards" }}>
         <div className="px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <span className="font-display text-xl">
-              Datafy!<span className="text-gold">.</span>
+            <span className="font-display text-xl font-semibold">
+              Datafy<span className="text-gold">.</span>
             </span>
             <span className="hidden md:block text-xs text-muted-foreground font-mono">
               / {name} · {dataset.rows.length} rows × {dataset.columns.length} cols
@@ -79,6 +157,7 @@ function Index() {
               size="sm"
               onClick={() => {
                 setCsv(null);
+                setActiveDatasetId(null);
                 setSelection(emptySelection());
               }}
               className="text-muted-foreground hover:text-gold"
@@ -93,6 +172,11 @@ function Index() {
               <MessageCircle className="w-4 h-4 mr-2" />
               {chatOpen ? "Hide sidekick" : "Open sidekick"}
             </Button>
+            <UserMenu
+              user={user}
+              onOpenAuth={() => setAuthOpen(true)}
+              onOpenHistory={() => setHistoryOpen(true)}
+            />
           </div>
         </div>
       </nav>
@@ -120,6 +204,20 @@ function Index() {
         selectionLabel={selLabel}
         pendingPrompt={pendingPrompt}
         onPromptConsumed={() => setPendingPrompt(null)}
+      />
+
+      <AuthModal
+        open={authOpen}
+        onOpenChange={setAuthOpen}
+        onSuccess={() => {
+          setHistoryOpen(true);
+        }}
+      />
+
+      <DatasetHistoryDrawer
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        onSelectDataset={(text, datasetName, id) => handleDatasetLoad(text, datasetName, id)}
       />
     </main>
   );
