@@ -148,48 +148,58 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
     const sampleObj = data[0] ?? {};
     const allKeys = Object.keys(sampleObj);
 
-    const isNumericVal = (val: any) =>
-      typeof val === "number" ||
-      (typeof val === "string" && val.trim() !== "" && !isNaN(Number(val)));
+    const isNumericColumn = (col: string) => {
+      const vals = data.map((item) => item[col]).filter((v) => v !== null && v !== undefined);
+      return vals.length > 0 && vals.every((v) => typeof v === "number" || (!isNaN(Number(v)) && String(v).trim() !== ""));
+    };
 
-    // Auto-detect X axis key (prefer non-numeric categorical string keys)
-    let x = spec.x;
-  if (!x || !allKeys.includes(x)) {
-    const stringCategoryKey = allKeys.find(
-      (k) => typeof sampleObj[k] === "string" && isNaN(Number(sampleObj[k])),
-    );
-    x = stringCategoryKey || allKeys[0] || "x";
-  }
+    const numCols = allKeys.filter(isNumericColumn);
+    const catCols = allKeys.filter((k) => !numCols.includes(k));
 
-  // Auto-detect Y series keys (prefer numeric columns excluding X)
-  let ys = Array.isArray(spec.y) ? spec.y : spec.y ? [spec.y] : [];
-  ys = ys.filter((k) => allKeys.includes(k));
-  if (ys.length === 0) {
-    const numKeys = allKeys.filter((k) => k !== x && isNumericVal(sampleObj[k]));
-    ys = numKeys.length > 0 ? numKeys : allKeys.filter((k) => k !== x);
-  }
-  if (ys.length === 0 && allKeys.length > 1) {
-    ys = [allKeys[1]];
-  }
+    let x = spec.x && allKeys.includes(spec.x) ? spec.x : undefined;
+    let ys = Array.isArray(spec.y)
+      ? spec.y.filter((k) => allKeys.includes(k))
+      : spec.y && allKeys.includes(spec.y)
+      ? [spec.y]
+      : [];
+    let categoryKey = spec.category && allKeys.includes(spec.category) ? spec.category : undefined;
 
-  // Auto-detect Category key for multivariate / categorical color coding
-  let categoryKey = spec.category;
-  if (!categoryKey || !allKeys.includes(categoryKey)) {
-    const categoryCandidate = allKeys.find(
-      (k) =>
-        k !== x &&
-        !ys.includes(k) &&
-        (typeof sampleObj[k] === "boolean" ||
-          typeof sampleObj[k] === "string" ||
-          String(sampleObj[k]).toLowerCase() === "true" ||
-          String(sampleObj[k]).toLowerCase() === "false")
-    );
-    if (categoryCandidate) {
-      categoryKey = categoryCandidate;
+    // CASE 1: 1 Categorical Column + 1 Numerical Column
+    if (catCols.length === 1 && numCols.length === 1) {
+      x = catCols[0]; // X is the categorical variable (e.g. Maternal.Smoker: FALSE / TRUE)
+      ys = [numCols[0]]; // Y is the numerical metric (e.g. Maternal.Pregnancy.Weight)
+      categoryKey = catCols[0]; // Color coding by category
     }
-  }
+    // CASE 2: 2+ Numerical Columns, 1 Categorical Column
+    else if (catCols.length >= 1 && numCols.length >= 2) {
+      if (!x || !numCols.includes(x)) x = numCols[0];
+      if (ys.length === 0) ys = [numCols[1]];
+      if (!categoryKey) categoryKey = catCols[0];
+    }
+    // CASE 3: 2+ Numerical Columns, 0 Categorical Columns
+    else if (numCols.length >= 2) {
+      if (!x || !allKeys.includes(x)) x = numCols[0];
+      if (ys.length === 0) ys = numCols.slice(1);
+    }
+    // CASE 4: 1 Numerical Column, 0 Categorical Columns
+    else if (numCols.length === 1) {
+      if (!x || x === numCols[0]) {
+        x = catCols[0] || allKeys.find((k) => k !== numCols[0]) || "Index";
+      }
+      ys = [numCols[0]];
+    }
+    // CASE 5: 1 Categorical Column, 0 Numerical Columns
+    else if (catCols.length === 1) {
+      x = catCols[0];
+      categoryKey = catCols[0];
+    }
 
-  const pieY = ys[0] ?? "value";
+    // Ultimate Fallbacks if still unassigned
+    if (!x) x = allKeys[0] || "x";
+    if (ys.length === 0) ys = allKeys.filter((k) => k !== x);
+    if (ys.length === 0) ys = [x];
+
+    const pieY = ys[0] ?? "value";
 
   const renderInner = () => {
     switch (spec.type) {

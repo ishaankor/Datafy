@@ -323,6 +323,31 @@ export const AIChat = ({
                                   {children}
                                 </code>
                               ),
+                              img: ({ src, alt }) => (
+                                <div className="my-3 rounded-lg overflow-hidden border border-gold/30 bg-ink/90 p-2 shadow-2xl space-y-2">
+                                  <div className="relative group">
+                                    <img
+                                      src={src}
+                                      alt={alt || "Python Matplotlib / Seaborn Chart"}
+                                      className="w-full h-auto rounded object-contain max-h-[500px] border border-border/40"
+                                    />
+                                    {src && (
+                                      <a
+                                        href={src}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-gold text-foreground hover:text-ink px-2.5 py-1 rounded text-[10px] font-mono font-medium shadow"
+                                      >
+                                        🔍 View Full Resolution
+                                      </a>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center justify-between text-[10px] text-gold/80 font-mono px-1">
+                                    <span>📊 Python Seaborn / Matplotlib Graphic</span>
+                                    <span>dpi=150</span>
+                                  </div>
+                                </div>
+                              ),
                             }}
                           >
                             {seg.text}
