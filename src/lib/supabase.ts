@@ -94,6 +94,19 @@ export async function saveDatasetToSupabase(
   return data as SavedDataset;
 }
 
+export async function touchDatasetTimestamp(datasetId: string): Promise<void> {
+  if (!supabase || !datasetId) return;
+  try {
+    const now = new Date().toISOString();
+    await supabase
+      .from("datasets")
+      .update({ updated_at: now })
+      .eq("id", datasetId);
+  } catch (err) {
+    console.error("Error touching dataset timestamp:", err);
+  }
+}
+
 export async function fetchUserDatasets(): Promise<SavedDataset[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -105,7 +118,14 @@ export async function fetchUserDatasets(): Promise<SavedDataset[]> {
     console.error("Error fetching user datasets:", error);
     return [];
   }
-  return (data as SavedDataset[]) || [];
+
+  const list = (data as SavedDataset[]) || [];
+  // Sort in JS by updated_at || created_at descending
+  return list.sort((a, b) => {
+    const timeA = new Date(a.updated_at || a.created_at).getTime();
+    const timeB = new Date(b.updated_at || b.created_at).getTime();
+    return timeB - timeA;
+  });
 }
 
 export async function deleteUserDataset(id: string): Promise<boolean> {
@@ -201,6 +221,7 @@ export async function saveChatMessage(
   sessionId: string,
   role: "user" | "assistant" | "system",
   content: string,
+  datasetId?: string | null,
 ): Promise<SavedChatMessage | null> {
   if (!supabase) return null;
   const { data: userData } = await supabase.auth.getUser();
@@ -221,5 +242,10 @@ export async function saveChatMessage(
     console.error("Error saving chat message:", error);
     return null;
   }
+
+  if (datasetId) {
+    await touchDatasetTimestamp(datasetId);
+  }
+
   return data as SavedChatMessage;
 }

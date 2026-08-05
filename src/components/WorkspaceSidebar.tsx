@@ -13,7 +13,7 @@ import {
   Database,
 } from "lucide-react";
 import { type User } from "@supabase/supabase-js";
-import { isToday, isYesterday } from "date-fns";
+import { isToday, isYesterday, subDays, isAfter } from "date-fns";
 
 interface WorkspaceSidebarProps {
   user: User | null;
@@ -22,6 +22,7 @@ interface WorkspaceSidebarProps {
   onNewSession: () => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  refreshKey?: number;
 }
 
 export function WorkspaceSidebar({
@@ -31,6 +32,7 @@ export function WorkspaceSidebar({
   onNewSession,
   collapsed,
   onToggleCollapse,
+  refreshKey,
 }: WorkspaceSidebarProps) {
   const [datasets, setDatasets] = useState<SavedDataset[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,7 +53,7 @@ export function WorkspaceSidebar({
 
   useEffect(() => {
     loadSessions();
-  }, [user, activeDatasetId]);
+  }, [user, activeDatasetId, refreshKey]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -81,12 +83,20 @@ export function WorkspaceSidebar({
 
   if (!user) return null;
 
-  // Group datasets by time
-  const todayDatasets = datasets.filter((d) => isToday(new Date(d.created_at)));
-  const yesterdayDatasets = datasets.filter((d) => isYesterday(new Date(d.created_at)));
-  const olderDatasets = datasets.filter(
-    (d) => !isToday(new Date(d.created_at)) && !isYesterday(new Date(d.created_at)),
-  );
+  // Group datasets by time based on last activity / updated_at
+  const sevenDaysAgo = subDays(new Date(), 7);
+  const getItemDate = (d: SavedDataset) => new Date(d.updated_at || d.created_at);
+
+  const todayDatasets = datasets.filter((d) => isToday(getItemDate(d)));
+  const yesterdayDatasets = datasets.filter((d) => isYesterday(getItemDate(d)));
+  const prev7DaysDatasets = datasets.filter((d) => {
+    const dt = getItemDate(d);
+    return !isToday(dt) && !isYesterday(dt) && isAfter(dt, sevenDaysAgo);
+  });
+  const olderDatasets = datasets.filter((d) => {
+    const dt = getItemDate(d);
+    return !isToday(dt) && !isYesterday(dt) && !isAfter(dt, sevenDaysAgo);
+  });
 
   const initials = user.email ? user.email.substring(0, 2).toUpperCase() : "US";
 
@@ -183,12 +193,34 @@ export function WorkspaceSidebar({
           </div>
         )}
 
-        {/* PREVIOUS DAYS */}
-        {olderDatasets.length > 0 && (
+        {/* PREVIOUS 7 DAYS */}
+        {prev7DaysDatasets.length > 0 && (
           <div className="space-y-1">
             {!collapsed && (
               <p className="px-2 py-1 text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
                 Previous 7 Days
+              </p>
+            )}
+            {prev7DaysDatasets.map((item) => (
+              <SidebarItem
+                key={item.id}
+                item={item}
+                active={activeDatasetId === item.id}
+                collapsed={collapsed}
+                deleting={deletingId === item.id}
+                onSelect={() => onSelectDataset(item)}
+                onDelete={(e) => handleDelete(item.id, e)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* OLDER */}
+        {olderDatasets.length > 0 && (
+          <div className="space-y-1">
+            {!collapsed && (
+              <p className="px-2 py-1 text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
+                Older
               </p>
             )}
             {olderDatasets.map((item) => (

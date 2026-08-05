@@ -96,6 +96,7 @@ CRITICAL INSTRUCTIONS:
 2. Use clear markdown headers, bold metrics, and structured key takeaways.
 3. MANDATORY CHART GENERATION: If the user asks to create, plot, draw, or visualize a graph or chart, YOU MUST GENERATE A VALID RECHARTS JSON SPEC IN A MARKDOWN CODE BLOCK AS FOLLOWS:
 
+For standard charts:
 \`\`\`chart
 {
   "type": "bar",
@@ -109,7 +110,22 @@ CRITICAL INSTRUCTIONS:
 }
 \`\`\`
 
-Always use real data points and column names from the Selection Data or Dataset Context above in the "data" array.
+For multivariate or scatter charts with a 3rd categorical variable:
+\`\`\`chart
+{
+  "type": "multivariate",
+  "title": "Descriptive Chart Title",
+  "x": "ColumnA",
+  "y": ["ColumnB"],
+  "category": "CategoricalColumnC",
+  "data": [
+    { "ColumnA": 62, "ColumnB": 100, "CategoricalColumnC": "FALSE" },
+    { "ColumnA": 64, "ColumnB": 115, "CategoricalColumnC": "TRUE" }
+  ]
+}
+\`\`\`
+
+Always include all columns and exact data rows in the "data" array. When a categorical variable is involved, ensure it is included as a property in each data object so color coding and legends render accurately.
 Do NOT just write text describing a chart without outputting the \`\`\`chart ... \`\`\` JSON block!`,
                 },
                 { role: "user", content: lastUserMsg },

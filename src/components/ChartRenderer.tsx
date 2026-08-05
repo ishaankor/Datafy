@@ -33,7 +33,8 @@ export interface ChartSpec {
   caption?: string;
   x?: string;
   y?: string | string[];
-  data: Array<Record<string, string | number | null>>;
+  category?: string;
+  data: Array<Record<string, string | number | boolean | null>>;
 }
 
 export type Segment =
@@ -44,11 +45,11 @@ export type Segment =
 
 const GOLD = "oklch(0.78 0.13 80)";
 const PALETTE = [
-  "oklch(0.78 0.13 80)",
-  "oklch(0.88 0.09 85)",
-  "oklch(0.65 0.11 70)",
-  "oklch(0.55 0.08 60)",
-  "oklch(0.42 0.05 50)",
+  "oklch(0.78 0.13 80)",  // Gold
+  "oklch(0.68 0.18 220)", // Vibrant Cyan
+  "oklch(0.70 0.22 30)",  // Coral / Red
+  "oklch(0.72 0.20 145)", // Emerald Green
+  "oklch(0.75 0.18 310)", // Magenta / Purple
 ];
 
 const tooltipStyle = {
@@ -155,6 +156,23 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
     ys = [allKeys[1]];
   }
 
+  // Auto-detect Category key for multivariate / categorical color coding
+  let categoryKey = spec.category;
+  if (!categoryKey || !allKeys.includes(categoryKey)) {
+    const categoryCandidate = allKeys.find(
+      (k) =>
+        k !== x &&
+        !ys.includes(k) &&
+        (typeof sampleObj[k] === "boolean" ||
+          typeof sampleObj[k] === "string" ||
+          String(sampleObj[k]).toLowerCase() === "true" ||
+          String(sampleObj[k]).toLowerCase() === "false")
+    );
+    if (categoryCandidate) {
+      categoryKey = categoryCandidate;
+    }
+  }
+
   const pieY = ys[0] ?? "value";
 
   const renderInner = () => {
@@ -232,7 +250,6 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
           </BarChart>
         );
       case "combo":
-      case "multivariate":
         return (
           <BarChart data={data} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
             <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" vertical={false} />
@@ -271,7 +288,50 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
             <Legend wrapperStyle={{ fontSize: 10 }} />
           </PieChart>
         );
-      case "scatter":
+      case "multivariate":
+      case "scatter": {
+        if (categoryKey) {
+          const categoryValues = Array.from(
+            new Set(data.map((item) => String(item[categoryKey!] ?? "N/A")))
+          );
+          return (
+            <ScatterChart margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
+              <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" />
+              <XAxis
+                dataKey={x || "x"}
+                name={x || "x"}
+                stroke="oklch(0.55 0.01 60)"
+                fontSize={9}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                dataKey={ys[0] ?? "y"}
+                name={ys[0] ?? "y"}
+                stroke="oklch(0.55 0.01 60)"
+                fontSize={9}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: GOLD, strokeWidth: 1 }} />
+              <Legend wrapperStyle={{ fontSize: 10 }} />
+              {categoryValues.map((catVal, i) => {
+                const groupData = data.filter(
+                  (item) => String(item[categoryKey!] ?? "N/A") === catVal
+                );
+                return (
+                  <Scatter
+                    key={catVal}
+                    name={`${categoryKey}: ${catVal}`}
+                    data={groupData}
+                    fill={PALETTE[i % PALETTE.length]}
+                  />
+                );
+              })}
+            </ScatterChart>
+          );
+        }
+
         return (
           <ScatterChart margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
             <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" />
@@ -295,6 +355,7 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
             <Scatter data={data} fill={GOLD} />
           </ScatterChart>
         );
+      }
       default:
         return (
           <BarChart data={data} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>

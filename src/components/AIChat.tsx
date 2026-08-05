@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
-import { X, Send, Sparkles } from "lucide-react";
+import { X, Send, Sparkles, Pencil, Check, RotateCcw } from "lucide-react";
 import { parseChartSegments, ChartRenderer, ImageRenderer } from "@/components/ChartRenderer";
-import { saveChatMessage } from "@/lib/supabase";
+import { saveChatMessage, touchDatasetTimestamp } from "@/lib/supabase";
 
 export type Message = {
   id: string;
@@ -19,6 +19,8 @@ interface AIChatProps {
   pendingPrompt?: string | null;
   onPromptConsumed?: () => void;
   sessionId?: string | null;
+  datasetId?: string | null;
+  onActivity?: () => void;
   initialMessages?: Message[];
 }
 
@@ -33,11 +35,15 @@ export const AIChat = ({
   pendingPrompt,
   onPromptConsumed,
   sessionId,
+  datasetId,
+  onActivity,
   initialMessages = [],
 }: AIChatProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
 
   useEffect(() => {
     setMessages(initialMessages);
@@ -65,18 +71,18 @@ export const AIChat = ({
     }
   }, [messages, isLoading]);
 
-  const append = async (content: string) => {
-    const userMsg: Message = { id: crypto.randomUUID(), role: "user", content };
-    setMessages((prev) => [...prev, userMsg]);
-    setIsLoading(true);
-
-    if (sessionId) {
-      saveChatMessage(sessionId, "user", content).catch(console.error);
+  const notifyActivity = () => {
+    if (datasetId) {
+      touchDatasetTimestamp(datasetId).catch(console.error);
     }
+    onActivity?.();
+  };
 
+  const fetchAssistantReply = async (history: Message[]) => {
+    setIsLoading(true);
     try {
       const payload = {
-        messages: [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
+        messages: history.map((m) => ({ role: m.role, content: m.content })),
         datasetContext: liveContext.current.datasetContext,
         selectionCSV: liveContext.current.activeSelectionCSV,
         selectionLabel: liveContext.current.activeSelectionLabel,
@@ -100,8 +106,9 @@ export const AIChat = ({
       setMessages((prev) => [...prev, assistantMsg]);
 
       if (sessionId) {
-        saveChatMessage(sessionId, "assistant", replyText).catch(console.error);
+        saveChatMessage(sessionId, "assistant", replyText, datasetId).catch(console.error);
       }
+      notifyActivity();
     } catch (error: any) {
       console.error("Chat API fetch error:", error);
       setMessages((prev) => [
@@ -116,6 +123,39 @@ export const AIChat = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const append = async (content: string) => {
+    const userMsg: Message = { id: crypto.randomUUID(), role: "user", content };
+    const updatedHistory = [...messages, userMsg];
+    setMessages(updatedHistory);
+
+    if (sessionId) {
+      saveChatMessage(sessionId, "user", content, datasetId).catch(console.error);
+    }
+    notifyActivity();
+    await fetchAssistantReply(updatedHistory);
+  };
+
+  const handleSaveEdit = async (msgId: string) => {
+    if (!editingText.trim() || isLoading) return;
+    const targetIdx = messages.findIndex((m) => m.id === msgId);
+    if (targetIdx === -1) return;
+
+    const newContent = editingText.trim();
+    const updatedMsg: Message = { ...messages[targetIdx], content: newContent };
+    
+    // Truncate messages after edited message
+    const newHistory = [...messages.slice(0, targetIdx), updatedMsg];
+    setMessages(newHistory);
+    setEditingMessageId(null);
+    setEditingText("");
+
+    if (sessionId) {
+      saveChatMessage(sessionId, "user", newContent, datasetId).catch(console.error);
+    }
+    notifyActivity();
+    await fetchAssistantReply(newHistory);
   };
 
   useEffect(() => {
@@ -173,11 +213,55 @@ export const AIChat = ({
           const segments = m.role === "assistant" ? parseChartSegments(m.content) : [];
 
           return (
-            <div key={m.id} className={m.role === "user" ? "flex justify-end" : "space-y-1"}>
+            <div key={m.id} className={m.role === "user" ? "flex justify-end group" : "space-y-1"}>
               {m.role === "user" ? (
-                <div className="max-w-[88%] bg-gold text-ink px-3.5 py-2 rounded-sm text-sm">
-                  {m.content}
-                </div>
+                editingMessageId === m.id ? (
+                  <div className="max-w-[90%] bg-gold/20 border border-gold p-2.5 rounded-md space-y-2">
+                    <textarea
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      rows={2}
+                      className="w-full bg-background border border-gold/40 rounded p-2 text-xs text-foreground focus:outline-none focus:border-gold font-sans"
+                    />
+                    <div className="flex justify-end gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditingMessageId(null);
+                          setEditingText("");
+                        }}
+                        className="text-[11px] h-6 px-2 text-muted-foreground hover:text-foreground"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleSaveEdit(m.id)}
+                        disabled={isLoading || !editingText.trim()}
+                        className="bg-gold text-ink hover:bg-gold-soft text-[11px] h-6 px-2.5 font-medium"
+                      >
+                        <Check className="w-3 h-3 mr-1" /> Save & Resubmit
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative flex items-center gap-1.5 max-w-[88%]">
+                    <button
+                      onClick={() => {
+                        setEditingMessageId(m.id);
+                        setEditingText(m.content);
+                      }}
+                      title="Edit message & update session activity"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-gold p-1 shrink-0"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                    <div className="bg-gold text-ink px-3.5 py-2 rounded-sm text-sm">
+                      {m.content}
+                    </div>
+                  </div>
+                )
               ) : (
                 <>
                   <p className="eyebrow text-[0.55rem]">Sidekick</p>

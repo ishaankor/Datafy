@@ -198,6 +198,12 @@ function Workspace() {
     );
   }
 
+  const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0);
+
+  const handleActivity = () => {
+    setSidebarRefreshKey((v) => v + 1);
+  };
+
   if (!user) {
     return (
       <main className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background px-6 py-12">
@@ -236,6 +242,7 @@ function Workspace() {
           onNewSession={handleNewSession}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+          refreshKey={sidebarRefreshKey}
         />
       )}
 
@@ -300,6 +307,8 @@ function Workspace() {
               pendingPrompt={pendingPrompt}
               onPromptConsumed={() => setPendingPrompt(null)}
               sessionId={activeSessionId}
+              datasetId={activeDatasetId}
+              onActivity={handleActivity}
               initialMessages={sessionMessages}
             />
           </div>
