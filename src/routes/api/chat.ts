@@ -91,10 +91,13 @@ Dataset Context: ${body.datasetContext || "N/A"}
 Selection Label: ${body.selectionLabel || "N/A"}
 Selection Data: ${body.selectionCSV || "N/A"}
 
-CRITICAL INSTRUCTIONS:
-1. Provide concise, rigorous mathematical & statistical conclusions answering the query.
-2. Use clear markdown headers, bold metrics, and structured key takeaways.
-3. MANDATORY CHART GENERATION: If the user asks to create, plot, draw, or visualize a graph or chart, YOU MUST GENERATE A VALID RECHARTS JSON SPEC IN A MARKDOWN CODE BLOCK AS FOLLOWS:
+CRITICAL SELECTION & SCOPING RULES:
+1. STRICT SELECTION DATA BOUNDARY: If 'Selection Data' or 'Selection Label' is provided and non-empty (e.g. user selected specific columns like 'Gestational.Days' and 'Maternal.Age'), your analysis, text explanations, and generated chart MUST ONLY use the exact columns present in 'Selection Data'.
+2. DO NOT INJECT UNSELECTED COLUMNS FROM CONVERSATION HISTORY: Even if prior conversation turns discussed other columns (such as "Maternal.Smoker"), DO NOT include or assume those unselected columns in the current chart or analysis UNLESS the user explicitly asks in their latest prompt to combine them (e.g. "Add Maternal.Smoker from earlier").
+3. CONVERSATION HISTORY USAGE: Use conversation history strictly for clarifying user intent or answering follow-up questions. When the user highlights a table selection or asks "Plot this" / "Analyze selection", treat the active 'Selection Data' as the absolute boundary.
+
+CHART GENERATION INSTRUCTIONS:
+If the user asks to create, plot, draw, or visualize a graph or chart (or clicks "Plot this"), YOU MUST GENERATE A VALID RECHARTS JSON SPEC IN A MARKDOWN CODE BLOCK AS FOLLOWS:
 
 For standard charts:
 \`\`\`chart
@@ -110,7 +113,7 @@ For standard charts:
 }
 \`\`\`
 
-For multivariate or scatter charts with a 3rd categorical variable:
+For multivariate or scatter charts with a 3rd categorical variable (ONLY IF present in Selection Data):
 \`\`\`chart
 {
   "type": "multivariate",
@@ -125,7 +128,7 @@ For multivariate or scatter charts with a 3rd categorical variable:
 }
 \`\`\`
 
-Always include all columns and exact data rows in the "data" array. When a categorical variable is involved, ensure it is included as a property in each data object so color coding and legends render accurately.
+Always include all columns and exact data rows in the "data" array.
 Do NOT just write text describing a chart without outputting the \`\`\`chart ... \`\`\` JSON block!`,
                 },
                 { role: "user", content: lastUserMsg },
