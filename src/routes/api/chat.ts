@@ -8,6 +8,20 @@ type ChatRequestBody = {
   selectionLabel?: string | null;
 };
 
+function truncateCSVForLLM(csvString?: string | null, maxRows = 40, maxChars = 3500): string {
+  if (!csvString || csvString.trim() === "") return "N/A";
+  if (csvString.length <= maxChars) return csvString;
+
+  const lines = csvString.trim().split("\n");
+  if (lines.length <= maxRows) return csvString.slice(0, maxChars);
+
+  const header = lines[0];
+  const sampleRows = lines.slice(1, maxRows + 1);
+  const totalRows = lines.length - 1;
+
+  return `${header}\n${sampleRows.join("\n")}\n... [TRUNCATED: Showing first ${maxRows} sample rows out of ${totalRows} total rows for context]`;
+}
+
 export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
@@ -21,13 +35,17 @@ export const Route = createFileRoute("/api/chat")({
           });
         }
 
+        const safeSelectionCSV = truncateCSVForLLM(body.selectionCSV);
+        const safeDatasetContext = truncateCSVForLLM(body.datasetContext);
+        const recentMessages = body.messages.slice(-6);
+
         const pythonPayload = {
-          messages: body.messages.map((m) => ({
+          messages: recentMessages.map((m) => ({
             role: m.role === "assistant" ? "assistant" : "user",
             content: typeof m.content === "string" ? m.content : "",
           })),
-          datasetContext: body.datasetContext || "",
-          selectionCSV: body.selectionCSV || "",
+          datasetContext: safeDatasetContext,
+          selectionCSV: safeSelectionCSV,
           selectionLabel: body.selectionLabel || "",
         };
 
@@ -87,9 +105,9 @@ export const Route = createFileRoute("/api/chat")({
                 {
                   role: "system",
                   content: `You are Datafy's Principal Data Scientist AI.
-Dataset Context: ${body.datasetContext || "N/A"}
+Dataset Context: ${safeDatasetContext}
 Selection Label: ${body.selectionLabel || "N/A"}
-Selection Data: ${body.selectionCSV || "N/A"}
+Selection Data: ${safeSelectionCSV}
 
 CRITICAL SELECTION & SCOPING RULES:
 1. STRICT SELECTION DATA BOUNDARY: If 'Selection Data' or 'Selection Label' is provided and non-empty (e.g. user selected specific columns like 'Gestational.Days' and 'Maternal.Age'), your analysis, text explanations, and generated chart MUST ONLY use the exact columns present in 'Selection Data'.
