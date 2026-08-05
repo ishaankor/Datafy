@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -40,7 +41,6 @@ export interface ChartSpec {
 export type Segment =
   | { kind: "text"; text: string }
   | { kind: "chart"; spec: ChartSpec }
-  | { kind: "python"; code: string }
   | { kind: "image"; alt: string; src: string }
   | { kind: "error"; text: string };
 
@@ -50,16 +50,18 @@ const PALETTE = [
   "oklch(0.68 0.18 220)", // Vibrant Cyan
   "oklch(0.70 0.22 30)",  // Coral / Red
   "oklch(0.72 0.20 145)", // Emerald Green
-  "oklch(0.75 0.18 310)", // Magenta / Purple
+  "oklch(0.75 0.18 310)", // Purple / Magenta
+  "oklch(0.82 0.15 60)",  // Amber
 ];
 
 const tooltipStyle = {
   background: "oklch(0.10 0.005 60)",
   border: "1px solid oklch(0.78 0.13 80 / 0.4)",
-  borderRadius: 2,
+  borderRadius: 4,
   fontFamily: "JetBrains Mono, monospace",
-  fontSize: 10,
-  color: "oklch(0.85 0.05 80)",
+  fontSize: 11,
+  color: "oklch(0.90 0.05 80)",
+  boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
 };
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -68,8 +70,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     const title = data.name || payload[0].name || label;
 
     return (
-      <div style={{ ...tooltipStyle, padding: "8px" }}>
-        {title && (
+      <div style={{ ...tooltipStyle, padding: "8px 12px" }}>
+        {title !== undefined && (
           <div
             style={{
               fontWeight: "bold",
@@ -78,7 +80,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
               borderBottom: "1px solid oklch(0.78 0.13 80 / 0.2)",
             }}
           >
-            {title}
+            {String(title)}
           </div>
         )}
         {payload.map((entry: any, index: number) => {
@@ -86,7 +88,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           return (
             <div key={index} style={{ color: entry.color || GOLD, marginTop: "2px" }}>
               {showName && <span style={{ opacity: 0.8 }}>{entry.name}: </span>}
-              <span style={{ fontWeight: 500 }}>{entry.value}</span>
+              <span style={{ fontWeight: 600 }}>{entry.value}</span>
             </div>
           );
         })}
@@ -96,62 +98,52 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-// ---------------------------------------------------------
-// NEW: Image Renderer for Matplotlib Base64 Outputs
-// ---------------------------------------------------------
 export function ImageRenderer({ alt, src }: { alt: string; src: string }) {
   const cleanSrc = src ? src.replace(/[\r\n\s]+/g, "") : "";
   return (
-    <div className="my-3 bg-ink/60 border border-gold/30 rounded-sm p-3">
-      {alt && <p className="font-display text-base text-gold-soft leading-tight mb-2">{alt}</p>}
-      <div className="flex justify-center bg-white/5 rounded-sm p-2">
-        <img src={cleanSrc} alt={alt} className="max-w-full h-auto rounded-sm object-contain" />
+    <div className="my-3 bg-ink/80 border border-gold/30 rounded-lg p-3 shadow-xl">
+      {alt && <p className="font-display text-sm text-gold-soft leading-tight mb-2">{alt}</p>}
+      <div className="flex justify-center bg-black/40 rounded p-2">
+        <img src={cleanSrc} alt={alt} className="max-w-full h-auto rounded object-contain" />
       </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------
-// LEGACY: Recharts Renderer for old JSON configs
-// ---------------------------------------------------------
 export function ChartRenderer({ spec }: { spec: ChartSpec }) {
-  try {
-    if (!spec || typeof spec !== "object") {
-      return (
-        <div className="my-2 p-2.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-xs">
-          ⚠️ Unable to render chart: Invalid specification.
-        </div>
-      );
-    }
+  const [activeType, setActiveType] = useState<ChartSpec["type"]>(spec.type || "bar");
 
+  // Normalize data and compute resolution mapping
+  const { data, xKey, yKeys, categoryKey, isCategoryDiscrete } = useMemo(() => {
     const rawData = Array.isArray(spec.data) ? spec.data : [];
     if (rawData.length === 0) {
-      return (
-        <div className="my-2 p-2.5 rounded bg-card border border-border text-muted-foreground font-mono text-xs">
-          📊 {spec.title || "Chart"} (No data points available)
-        </div>
-      );
+      return { data: [], xKey: "x", yKeys: [], categoryKey: undefined, isCategoryDiscrete: false };
     }
 
-    // Convert stringified numbers in rawData to real JS numbers
-    const data = rawData.map((item) => {
-      if (!item || typeof item !== "object") return {};
-      const newItem: Record<string, any> = { ...item };
-      for (const key of Object.keys(newItem)) {
-        const val = newItem[key];
+    // Convert string numbers to JS numbers & index rows if needed
+    const processedData = rawData.map((item, idx) => {
+      if (!item || typeof item !== "object") return { _index: idx + 1 };
+      const newItem: Record<string, any> = { _index: idx + 1 };
+      for (const key of Object.keys(item)) {
+        const val = item[key];
         if (typeof val === "string" && val.trim() !== "" && !isNaN(Number(val))) {
           newItem[key] = Number(val);
+        } else {
+          newItem[key] = val;
         }
       }
       return newItem;
     });
 
-    const sampleObj = data[0] ?? {};
-    const allKeys = Object.keys(sampleObj);
+    const sampleObj = processedData[0] || {};
+    const allKeys = Object.keys(sampleObj).filter((k) => k !== "_index");
 
     const isNumericColumn = (col: string) => {
-      const vals = data.map((item) => item[col]).filter((v) => v !== null && v !== undefined);
-      return vals.length > 0 && vals.every((v) => typeof v === "number" || (!isNaN(Number(v)) && String(v).trim() !== ""));
+      const vals = processedData.map((d) => d[col]).filter((v) => v !== null && v !== undefined);
+      return (
+        vals.length > 0 &&
+        vals.every((v) => typeof v === "number" || (!isNaN(Number(v)) && String(v).trim() !== ""))
+      );
     };
 
     const numCols = allKeys.filter(isNumericColumn);
@@ -163,87 +155,113 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
       : spec.y && allKeys.includes(spec.y)
       ? [spec.y]
       : [];
-    let categoryKey = spec.category && allKeys.includes(spec.category) ? spec.category : undefined;
+    let catKey = spec.category && allKeys.includes(spec.category) ? spec.category : undefined;
 
-    // CASE 1: 1 Categorical Column + 1 Numerical Column
-    if (catCols.length === 1 && numCols.length === 1) {
-      x = catCols[0]; // X is the categorical variable (e.g. Maternal.Smoker: FALSE / TRUE)
-      ys = [numCols[0]]; // Y is the numerical metric (e.g. Maternal.Pregnancy.Weight)
-      categoryKey = catCols[0]; // Color coding by category
-    }
-    // CASE 2: 2+ Numerical Columns, 1 Categorical Column
-    else if (catCols.length >= 1 && numCols.length >= 2) {
-      if (!x || !numCols.includes(x)) x = numCols[0];
-      if (ys.length === 0) ys = [numCols[1]];
-      if (!categoryKey) categoryKey = catCols[0];
-    }
-    // CASE 3: 2+ Numerical Columns, 0 Categorical Columns
-    else if (numCols.length >= 2) {
-      if (!x || !allKeys.includes(x)) x = numCols[0];
-      if (ys.length === 0) ys = numCols.slice(1);
-    }
-    // CASE 4: 1 Numerical Column, 0 Categorical Columns
-    else if (numCols.length === 1) {
-      if (!x || x === numCols[0]) {
-        x = catCols[0] || allKeys.find((k) => k !== numCols[0]) || "Index";
-      }
-      ys = [numCols[0]];
-    }
-    // CASE 5: 1 Categorical Column, 0 Numerical Columns
-    else if (catCols.length === 1) {
+    // Smart Column Resolution Logic
+    if (catCols.length >= 1 && numCols.length >= 1) {
       x = catCols[0];
-      categoryKey = catCols[0];
+      ys = ys.length > 0 ? ys : numCols;
+      catKey = catCols[0];
+    } else if (numCols.length >= 2) {
+      if (!x || !numCols.includes(x)) x = numCols[0];
+      if (ys.length === 0) ys = numCols.filter((k) => k !== x);
+      if (ys.length === 0) ys = [numCols[1] || numCols[0]];
+    } else if (numCols.length === 1) {
+      x = catCols[0] || "_index";
+      ys = [numCols[0]];
+    } else if (catCols.length === 1) {
+      // 1 Categorical column -> Frequency counts
+      const counts: Record<string, number> = {};
+      processedData.forEach((d) => {
+        const val = String(d[catCols[0]] ?? "N/A");
+        counts[val] = (counts[val] || 0) + 1;
+      });
+      const freqData = Object.keys(counts).map((k) => ({
+        [catCols[0]]: k,
+        Count: counts[k],
+      }));
+      return {
+        data: freqData,
+        xKey: catCols[0],
+        yKeys: ["Count"],
+        categoryKey: catCols[0],
+        isCategoryDiscrete: true,
+      };
     }
 
-    // Ultimate Fallbacks if still unassigned
-    if (!x) x = allKeys[0] || "x";
+    if (!x) x = allKeys[0] || "_index";
     if (ys.length === 0) ys = allKeys.filter((k) => k !== x);
     if (ys.length === 0) ys = [x];
 
-    const pieY = ys[0] ?? "value";
+    // Determine if category key is truly discrete (e.g. <= 8 unique values like Smoker status)
+    let isDiscrete = false;
+    if (catKey) {
+      const uniqueVals = new Set(processedData.map((d) => String(d[catKey!] ?? "")));
+      isDiscrete = uniqueVals.size > 0 && uniqueVals.size <= 8;
+    }
 
-  const renderInner = () => {
-    switch (spec.type) {
+    return {
+      data: processedData,
+      xKey: x,
+      yKeys: ys,
+      categoryKey: isDiscrete ? catKey : undefined,
+      isCategoryDiscrete: isDiscrete,
+    };
+  }, [spec]);
+
+  if (!spec || data.length === 0) {
+    return (
+      <div className="my-2 p-3 rounded bg-card/60 border border-border text-muted-foreground font-mono text-xs text-center">
+        📊 No valid chart data points available for this selection.
+      </div>
+    );
+  }
+
+  const renderChart = () => {
+    switch (activeType) {
       case "line":
         return (
-          <LineChart data={data} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
-            <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" vertical={false} />
+          <LineChart data={data} margin={{ top: 10, right: 15, left: -10, bottom: 5 }}>
+            <CartesianGrid stroke="oklch(0.25 0.005 60)" strokeDasharray="2 4" vertical={false} />
             <XAxis
-              dataKey={x}
-              stroke="oklch(0.55 0.01 60)"
-              fontSize={9}
+              dataKey={xKey}
+              stroke="oklch(0.65 0.01 60)"
+              fontSize={10}
               tickLine={false}
               axisLine={false}
             />
-            <YAxis stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
-            <Tooltip content={<CustomTooltip />} />
-            {ys.length > 1 && <Legend wrapperStyle={{ fontSize: 10 }} />}
-            {ys.map((k, i) => (
+            <YAxis stroke="oklch(0.65 0.01 60)" fontSize={10} tickLine={false} axisLine={false} />
+            <Tooltip content={<CustomTooltip />} cursor={{ stroke: GOLD, strokeDasharray: "2 2" }} />
+            <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
+            {yKeys.map((k, i) => (
               <Line
                 key={k}
                 type="monotone"
                 dataKey={k}
                 stroke={PALETTE[i % PALETTE.length]}
-                strokeWidth={1.5}
-                dot={{ r: 2 }}
+                strokeWidth={2}
+                dot={{ r: 3, fill: PALETTE[i % PALETTE.length] }}
+                activeDot={{ r: 5 }}
               />
             ))}
           </LineChart>
         );
+
       case "area":
         return (
-          <AreaChart data={data} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
-            <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" vertical={false} />
+          <AreaChart data={data} margin={{ top: 10, right: 15, left: -10, bottom: 5 }}>
+            <CartesianGrid stroke="oklch(0.25 0.005 60)" strokeDasharray="2 4" vertical={false} />
             <XAxis
-              dataKey={x}
-              stroke="oklch(0.55 0.01 60)"
-              fontSize={9}
+              dataKey={xKey}
+              stroke="oklch(0.65 0.01 60)"
+              fontSize={10}
               tickLine={false}
               axisLine={false}
             />
-            <YAxis stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
+            <YAxis stroke="oklch(0.65 0.01 60)" fontSize={10} tickLine={false} axisLine={false} />
             <Tooltip content={<CustomTooltip />} />
-            {ys.map((k, i) => (
+            <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
+            {yKeys.map((k, i) => (
               <Area
                 key={k}
                 type="monotone"
@@ -251,130 +269,64 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
                 stroke={PALETTE[i % PALETTE.length]}
                 fill={PALETTE[i % PALETTE.length]}
                 fillOpacity={0.25}
+                strokeWidth={2}
               />
             ))}
           </AreaChart>
         );
-      case "bar":
-      case "column":
-      case "histogram":
-        return (
-          <BarChart data={data} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
-            <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" vertical={false} />
-            <XAxis
-              dataKey={x}
-              stroke="oklch(0.55 0.01 60)"
-              fontSize={9}
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: "oklch(0.78 0.13 80 / 0.08)" }} />
-            {ys.length > 1 && <Legend wrapperStyle={{ fontSize: 10 }} />}
-            {ys.map((k, i) => (
-              <Bar key={k} dataKey={k} fill={PALETTE[i % PALETTE.length]} radius={[2, 2, 0, 0]} />
-            ))}
-          </BarChart>
-        );
-      case "combo":
-        return (
-          <BarChart data={data} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
-            <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" vertical={false} />
-            <XAxis
-              dataKey={x}
-              stroke="oklch(0.55 0.01 60)"
-              fontSize={9}
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: "oklch(0.78 0.13 80 / 0.08)" }} />
-            <Legend wrapperStyle={{ fontSize: 10 }} />
-            {ys.map((k, i) => (
-              <Bar key={k} dataKey={k} fill={PALETTE[i % PALETTE.length]} radius={[2, 2, 0, 0]} />
-            ))}
-          </BarChart>
-        );
-      case "pie":
-        return (
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey={pieY}
-              nameKey={x || "name"}
-              innerRadius={40}
-              outerRadius={75}
-              paddingAngle={2}
-              stroke="oklch(0.10 0.005 60)"
-            >
-              {data.map((_, i) => (
-                <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ fontSize: 10 }} />
-          </PieChart>
-        );
+
+      case "scatter":
       case "multivariate":
-      case "scatter": {
-        if (categoryKey) {
-          const categoryValues = Array.from(
-            new Set(data.map((item) => String(item[categoryKey!] ?? "N/A")))
-          );
+        if (categoryKey && isCategoryDiscrete) {
+          const catValues = Array.from(new Set(data.map((d) => String(d[categoryKey] ?? "N/A"))));
           return (
-            <ScatterChart margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
-              <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" />
+            <ScatterChart margin={{ top: 10, right: 15, left: -10, bottom: 5 }}>
+              <CartesianGrid stroke="oklch(0.25 0.005 60)" strokeDasharray="2 4" />
               <XAxis
-                dataKey={x || "x"}
-                name={x || "x"}
-                stroke="oklch(0.55 0.01 60)"
-                fontSize={9}
+                dataKey={xKey}
+                name={xKey}
+                stroke="oklch(0.65 0.01 60)"
+                fontSize={10}
                 tickLine={false}
                 axisLine={false}
               />
               <YAxis
-                dataKey={ys[0] ?? "y"}
-                name={ys[0] ?? "y"}
-                stroke="oklch(0.55 0.01 60)"
-                fontSize={9}
+                dataKey={yKeys[0] || "y"}
+                name={yKeys[0] || "y"}
+                stroke="oklch(0.65 0.01 60)"
+                fontSize={10}
                 tickLine={false}
                 axisLine={false}
               />
               <Tooltip content={<CustomTooltip />} cursor={{ stroke: GOLD, strokeWidth: 1 }} />
-              <Legend wrapperStyle={{ fontSize: 10 }} />
-              {categoryValues.map((catVal, i) => {
-                const groupData = data.filter(
-                  (item) => String(item[categoryKey!] ?? "N/A") === catVal
-                );
-                return (
-                  <Scatter
-                    key={catVal}
-                    name={`${categoryKey}: ${catVal}`}
-                    data={groupData}
-                    fill={PALETTE[i % PALETTE.length]}
-                  />
-                );
-              })}
+              <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
+              {catValues.map((catVal, i) => (
+                <Scatter
+                  key={catVal}
+                  name={`${categoryKey}: ${catVal}`}
+                  data={data.filter((d) => String(d[categoryKey] ?? "N/A") === catVal)}
+                  fill={PALETTE[i % PALETTE.length]}
+                />
+              ))}
             </ScatterChart>
           );
         }
-
         return (
-          <ScatterChart margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
-            <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" />
+          <ScatterChart margin={{ top: 10, right: 15, left: -10, bottom: 5 }}>
+            <CartesianGrid stroke="oklch(0.25 0.005 60)" strokeDasharray="2 4" />
             <XAxis
-              dataKey={x || "x"}
-              name={x || "x"}
-              stroke="oklch(0.55 0.01 60)"
-              fontSize={9}
+              dataKey={xKey}
+              name={xKey}
+              stroke="oklch(0.65 0.01 60)"
+              fontSize={10}
               tickLine={false}
               axisLine={false}
             />
             <YAxis
-              dataKey={ys[0] ?? "y"}
-              name={ys[0] ?? "y"}
-              stroke="oklch(0.55 0.01 60)"
-              fontSize={9}
+              dataKey={yKeys[0] || "y"}
+              name={yKeys[0] || "y"}
+              stroke="oklch(0.65 0.01 60)"
+              fontSize={10}
               tickLine={false}
               axisLine={false}
             />
@@ -382,22 +334,49 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
             <Scatter data={data} fill={GOLD} />
           </ScatterChart>
         );
-      }
+
+      case "pie":
+        return (
+          <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+            <Tooltip content={<CustomTooltip />} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Pie
+              data={data}
+              dataKey={yKeys[0] || "Count"}
+              nameKey={xKey}
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              innerRadius={35}
+              paddingAngle={4}
+              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              labelLine={false}
+            >
+              {data.map((_, i) => (
+                <Cell key={i} fill={PALETTE[i % PALETTE.length]} stroke="oklch(0.1 0.005 60)" />
+              ))}
+            </Pie>
+          </PieChart>
+        );
+
+      case "bar":
+      case "column":
       default:
         return (
-          <BarChart data={data} margin={{ top: 5, right: 10, left: -15, bottom: 0 }}>
-            <CartesianGrid stroke="oklch(0.3 0.005 60)" strokeDasharray="2 4" vertical={false} />
+          <BarChart data={data} margin={{ top: 10, right: 15, left: -10, bottom: 5 }}>
+            <CartesianGrid stroke="oklch(0.25 0.005 60)" strokeDasharray="2 4" vertical={false} />
             <XAxis
-              dataKey={x || "name"}
-              stroke="oklch(0.55 0.01 60)"
-              fontSize={9}
+              dataKey={xKey}
+              stroke="oklch(0.65 0.01 60)"
+              fontSize={10}
               tickLine={false}
               axisLine={false}
             />
-            <YAxis stroke="oklch(0.55 0.01 60)" fontSize={9} tickLine={false} axisLine={false} />
+            <YAxis stroke="oklch(0.65 0.01 60)" fontSize={10} tickLine={false} axisLine={false} />
             <Tooltip content={<CustomTooltip />} />
-            {ys.map((k, i) => (
-              <Bar key={k} dataKey={k} fill={PALETTE[i % PALETTE.length]} radius={[2, 2, 0, 0]} />
+            <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
+            {yKeys.map((k, i) => (
+              <Bar key={k} dataKey={k} fill={PALETTE[i % PALETTE.length]} radius={[3, 3, 0, 0]} />
             ))}
           </BarChart>
         );
@@ -405,29 +384,40 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
   };
 
   return (
-    <div className="my-3 bg-ink/60 border border-gold/30 rounded-sm p-3">
-      {spec.title && (
-        <p className="font-display text-base text-gold-soft leading-tight">{spec.title}</p>
-      )}
-      {spec.caption && (
-        <p className="text-[10px] text-muted-foreground italic mb-2">{spec.caption}</p>
-      )}
-      <div className="h-56 mt-2">
+    <div className="my-4 bg-ink/90 border border-gold/30 rounded-xl p-4 shadow-2xl space-y-3">
+      <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
+        <div>
+          {spec.title && (
+            <p className="font-display text-base text-gold-soft leading-tight">{spec.title}</p>
+          )}
+          {spec.caption && (
+            <p className="text-[10px] text-muted-foreground italic">{spec.caption}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-1 bg-card/60 p-1 rounded-lg border border-border/50">
+          {(["bar", "line", "area", "scatter", "pie"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setActiveType(t)}
+              className={`px-2 py-0.5 rounded text-[10px] font-mono capitalize transition ${
+                activeType === t || (activeType === "multivariate" && t === "scatter")
+                  ? "bg-gold text-ink font-bold shadow"
+                  : "text-muted-foreground hover:text-gold"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="h-64 pt-1">
         <ResponsiveContainer width="100%" height="100%">
-          {renderInner()}
+          {renderChart()}
         </ResponsiveContainer>
       </div>
     </div>
   );
-  } catch (err) {
-    console.error("ChartRenderer error:", err);
-    return (
-      <div className="my-2 p-3 rounded bg-card border border-destructive/30 text-xs text-muted-foreground font-mono space-y-1">
-        <p className="font-semibold text-destructive">⚠️ Chart Render Error</p>
-        <p className="text-[11px] opacity-80">Could not render chart graphic for this specification.</p>
-      </div>
-    );
-  }
 }
 
 export function robustParseJson<T = any>(raw: string): T | null {
@@ -438,16 +428,11 @@ export function robustParseJson<T = any>(raw: string): T | null {
     try {
       let cleaned = raw
         .trim()
-        // Fix double curly braces {{ ... }} if present
         .replace(/^\{\{/, "{")
         .replace(/\}\}$/, "}")
-        // Remove single-line JS comments
         .replace(/\/\/.*/g, "")
-        // Remove multi-line JS comments
         .replace(/\/\*[\s\S]*?\*\//g, "")
-        // Replace single quotes around keys/strings with double quotes
         .replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"')
-        // Remove trailing commas before closing braces/brackets
         .replace(/,\s*([}\]])/g, "$1");
 
       const firstBrace = cleaned.indexOf("{");
@@ -467,7 +452,7 @@ export function parseChartSegments(text: string): Segment[] {
   const segments: Segment[] = [];
 
   const re =
-    /(?:```chart\s*\n([\s\S]*?)```)|(?:```python\s*\n([\s\S]*?)```)|(?:!\[([^\]]*)\]\((data:image\/[a-zA-Z0-9;+,/=\r\n\s]+)\))/g;
+    /(?:```chart\s*\n([\s\S]*?)```)|(?:!\[([^\]]*)\]\((data:image\/[a-zA-Z0-9;+,/=\r\n\s]+)\))/g;
 
   let last = 0;
   let m: RegExpExecArray | null;
@@ -478,17 +463,12 @@ export function parseChartSegments(text: string): Segment[] {
     }
 
     if (m[1]) {
-      // It's a JSON chart block
       const spec = robustParseJson<ChartSpec>(m[1]);
       if (spec && typeof spec === "object" && (spec.data || spec.type)) {
         segments.push({ kind: "chart", spec });
       }
-    } else if (m[2]) {
-      // It's an executable Python code block
-      segments.push({ kind: "python", code: m[2].trim() });
-    } else if (m[3] !== undefined && m[4]) {
-      // It's a pre-rendered Base64 Matplotlib image
-      segments.push({ kind: "image", alt: m[3], src: m[4] });
+    } else if (m[2] !== undefined && m[3]) {
+      segments.push({ kind: "image", alt: m[2], src: m[3] });
     }
 
     last = re.lastIndex;

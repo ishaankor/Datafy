@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 import { X, Send, Sparkles, Pencil, Check, RotateCcw } from "lucide-react";
 import { parseChartSegments, ChartRenderer, ImageRenderer } from "@/components/ChartRenderer";
-import { PyodideChartRunner } from "@/components/PyodideChartRunner";
 import { saveChatMessage, touchDatasetTimestamp } from "@/lib/supabase";
 
 export type Message = {
@@ -269,14 +268,6 @@ export const AIChat = ({
                   <div className="text-sm leading-relaxed text-foreground/90 space-y-4">
                     {segments.map((seg, i) => {
                       if (seg.kind === "chart") return <ChartRenderer key={i} spec={seg.spec} />;
-                      if (seg.kind === "python")
-                        return (
-                          <PyodideChartRunner
-                            key={i}
-                            code={seg.code}
-                            csvContent={activeSelectionCSV || datasetContext}
-                          />
-                        );
                       if (seg.kind === "image")
                         return <ImageRenderer key={i} alt={seg.alt} src={seg.src} />;
                       if (seg.kind === "error")
