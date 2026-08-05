@@ -36,31 +36,48 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
+  console.error("Root route error captured:", error);
   const router = useRouter();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+      <div className="max-w-md text-center space-y-4">
+        <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
           This page didn't load
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="text-xs sm:text-sm text-muted-foreground font-serif leading-relaxed">
           Something went wrong on our end. You can try refreshing or head back home.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+
+        {error?.message && (
+          <div className="p-3 rounded-lg bg-card/80 border border-destructive/30 text-left space-y-1">
+            <p className="text-[10px] font-mono text-destructive font-semibold uppercase tracking-wider">
+              Error Details:
+            </p>
+            <p className="text-[11px] font-mono text-muted-foreground break-words">
+              {error.message}
+            </p>
+          </div>
+        )}
+
+        <div className="pt-2 flex flex-wrap justify-center gap-3">
           <button
             onClick={() => {
-              router.invalidate();
-              reset();
+              try {
+                router.invalidate();
+                reset();
+              } catch {
+                // ignore
+              }
+              window.location.reload();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-md bg-gold hover:bg-gold-soft text-ink px-5 py-2.5 text-xs font-semibold shadow-sm transition-colors cursor-pointer"
           >
             Try again
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="inline-flex items-center justify-center rounded-md border border-border bg-card/60 px-5 py-2.5 text-xs font-medium text-foreground transition-colors hover:bg-card hover:text-gold"
           >
             Go home
           </a>

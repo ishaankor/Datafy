@@ -50,6 +50,11 @@ function Workspace() {
   const [authLoading, setAuthLoading] = useState(true);
   const [authOpen, setAuthOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0);
+
+  const handleActivity = () => {
+    setSidebarRefreshKey((v) => v + 1);
+  };
 
   useEffect(() => {
     if (!supabase) {
@@ -197,12 +202,6 @@ function Workspace() {
       </main>
     );
   }
-
-  const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0);
-
-  const handleActivity = () => {
-    setSidebarRefreshKey((v) => v + 1);
-  };
 
   if (!user) {
     return (

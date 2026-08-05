@@ -114,30 +114,46 @@ export function ImageRenderer({ alt, src }: { alt: string; src: string }) {
 // LEGACY: Recharts Renderer for old JSON configs
 // ---------------------------------------------------------
 export function ChartRenderer({ spec }: { spec: ChartSpec }) {
-  const rawData = spec.data ?? [];
-
-  // Convert stringified numbers in rawData to real JS numbers
-  const data = rawData.map((item) => {
-    if (!item || typeof item !== "object") return item;
-    const newItem: Record<string, any> = { ...item };
-    for (const key of Object.keys(newItem)) {
-      const val = newItem[key];
-      if (typeof val === "string" && val.trim() !== "" && !isNaN(Number(val))) {
-        newItem[key] = Number(val);
-      }
+  try {
+    if (!spec || typeof spec !== "object") {
+      return (
+        <div className="my-2 p-2.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-xs">
+          ⚠️ Unable to render chart: Invalid specification.
+        </div>
+      );
     }
-    return newItem;
-  });
 
-  const sampleObj = data[0] ?? {};
-  const allKeys = Object.keys(sampleObj);
+    const rawData = Array.isArray(spec.data) ? spec.data : [];
+    if (rawData.length === 0) {
+      return (
+        <div className="my-2 p-2.5 rounded bg-card border border-border text-muted-foreground font-mono text-xs">
+          📊 {spec.title || "Chart"} (No data points available)
+        </div>
+      );
+    }
 
-  const isNumericVal = (val: any) =>
-    typeof val === "number" ||
-    (typeof val === "string" && val.trim() !== "" && !isNaN(Number(val)));
+    // Convert stringified numbers in rawData to real JS numbers
+    const data = rawData.map((item) => {
+      if (!item || typeof item !== "object") return {};
+      const newItem: Record<string, any> = { ...item };
+      for (const key of Object.keys(newItem)) {
+        const val = newItem[key];
+        if (typeof val === "string" && val.trim() !== "" && !isNaN(Number(val))) {
+          newItem[key] = Number(val);
+        }
+      }
+      return newItem;
+    });
 
-  // Auto-detect X axis key (prefer non-numeric categorical string keys)
-  let x = spec.x;
+    const sampleObj = data[0] ?? {};
+    const allKeys = Object.keys(sampleObj);
+
+    const isNumericVal = (val: any) =>
+      typeof val === "number" ||
+      (typeof val === "string" && val.trim() !== "" && !isNaN(Number(val)));
+
+    // Auto-detect X axis key (prefer non-numeric categorical string keys)
+    let x = spec.x;
   if (!x || !allKeys.includes(x)) {
     const stringCategoryKey = allKeys.find(
       (k) => typeof sampleObj[k] === "string" && isNaN(Number(sampleObj[k])),
@@ -392,6 +408,15 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
       </div>
     </div>
   );
+  } catch (err) {
+    console.error("ChartRenderer error:", err);
+    return (
+      <div className="my-2 p-3 rounded bg-card border border-destructive/30 text-xs text-muted-foreground font-mono space-y-1">
+        <p className="font-semibold text-destructive">⚠️ Chart Render Error</p>
+        <p className="text-[11px] opacity-80">Could not render chart graphic for this specification.</p>
+      </div>
+    );
+  }
 }
 
 export function robustParseJson<T = any>(raw: string): T | null {
