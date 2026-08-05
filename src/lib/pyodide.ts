@@ -77,8 +77,8 @@ plt.rcParams['font.sans-serif'] = 'sans-serif'
 plt.rcParams['axes.edgecolor'] = '#D4AF37'
 plt.rcParams['axes.linewidth'] = 0.8
 
-# Reset plt state before user code
-plt.close('all')
+# Override plt.show so calling it does not clear/wipe the figure canvas
+plt.show = lambda *args, **kwargs: None
 
 user_code = ${JSON.stringify(code)}
 
@@ -99,9 +99,10 @@ try:
 except Exception as e:
     print(f"Python Execution Error: {e}", file=sys.stderr)
 
-# Save figure to BytesIO buffer
+# Save current figure to BytesIO buffer
 buf = io.BytesIO()
-plt.savefig(buf, format='png', bbox_inches='tight', dpi=150, facecolor='#0D0D0F', edgecolor='none')
+fig = plt.gcf()
+fig.savefig(buf, format='png', bbox_inches='tight', dpi=150, facecolor='#0D0D0F', edgecolor='none')
 buf.seek(0)
 img_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
 plt.close('all')
