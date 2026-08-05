@@ -25,9 +25,10 @@ export function selectionToCSV(ds: Dataset, sel: Selection): string {
   const hasCells = sel.cells.size > 0;
 
   if (!hasRows && !hasCols && !hasCells) {
-    const head = ["Row #", ...ds.columns.map((c) => c.name)].join(",");
-    const body = ds.rows
-      .map((r, i) => [i + 1, ...ds.columns.map((c) => toCsvVal(r[c.name]))].join(","))
+    const head = ds.columns.map((c) => c.name).join(",");
+    const sampleRows = ds.rows.length > 300 ? ds.rows.slice(0, 300) : ds.rows;
+    const body = sampleRows
+      .map((r) => ds.columns.map((c) => toCsvVal(r[c.name])).join(","))
       .join("\n");
     return `${head}\n${body}`;
   }
@@ -51,9 +52,12 @@ export function selectionToCSV(ds: Dataset, sel: Selection): string {
     const r = Number(rStr);
     const c = Number(cStr);
     if (
-      Number.isInteger(r) && Number.isInteger(c) &&
-      r >= 0 && r < ds.rows.length &&
-      c >= 0 && c < ds.columns.length
+      Number.isInteger(r) &&
+      Number.isInteger(c) &&
+      r >= 0 &&
+      r < ds.rows.length &&
+      c >= 0 &&
+      c < ds.columns.length
     ) {
       cellSet.add(k);
     }
@@ -74,7 +78,9 @@ export function selectionToCSV(ds: Dataset, sel: Selection): string {
   if (isDenseRectangle) {
     const head = ["Row #", ...activeCols.map((c) => ds.columns[c].name)].join(",");
     const body = activeRows
-      .map((r) => [r + 1, ...activeCols.map((c) => toCsvVal(ds.rows[r][ds.columns[c].name]))].join(","))
+      .map((r) =>
+        [r + 1, ...activeCols.map((c) => toCsvVal(ds.rows[r][ds.columns[c].name]))].join(","),
+      )
       .join("\n");
     return `${head}\n${body}`;
   }
@@ -90,7 +96,6 @@ export function selectionToCSV(ds: Dataset, sel: Selection): string {
 
   return `${head}\n${body}`;
 }
-
 
 export function selectionLabel(sel: Selection): string | null {
   const parts: string[] = [];
@@ -208,9 +213,7 @@ export function DataTable({ dataset, selection, setSelection, onAsk }: Props) {
       });
     } else if (selection.cols.size || selection.rows.size) {
       const rowIdx =
-        selection.rows.size > 0
-          ? Array.from(selection.rows)
-          : dataset.rows.map((_, i) => i);
+        selection.rows.size > 0 ? Array.from(selection.rows) : dataset.rows.map((_, i) => i);
       const colIdx =
         selection.cols.size > 0
           ? cols.map((c, i) => (selection.cols.has(c.name) ? i : -1)).filter((i) => i >= 0)
@@ -293,9 +296,7 @@ export function DataTable({ dataset, selection, setSelection, onAsk }: Props) {
                     key={c.name}
                     onClick={(e) => toggleColumn(c.name, e)}
                     className={`group cursor-pointer text-left px-3 py-2 border-b border-border font-normal whitespace-nowrap transition ${
-                      active
-                        ? "bg-gold/15 text-gold"
-                        : "text-gold/80 hover:bg-gold/5"
+                      active ? "bg-gold/15 text-gold" : "text-gold/80 hover:bg-gold/5"
                     }`}
                     title="Click to select column · Shift to add"
                   >

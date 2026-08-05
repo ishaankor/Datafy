@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { toast } from "sonner";
 
 const supabaseUrl =
   import.meta.env.VITE_SUPABASE_URL ||
@@ -53,8 +54,25 @@ export async function saveDatasetToSupabase(
   colCount: number,
 ): Promise<SavedDataset | null> {
   if (!supabase) return null;
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return null;
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    console.warn("Cannot save dataset: User not authenticated.", userError);
+    return null;
+  }
+
+  // Prevent duplicate sessions: Check if dataset already exists for this user
+  const { data: existing } = await supabase
+    .from("datasets")
+    .select("*")
+    .eq("user_id", userData.user.id)
+    .eq("name", name)
+    .limit(1);
+
+  if (existing && existing.length > 0) {
+    // Check if csv_content also matches or if dataset by same name exists
+    const match = existing.find((d) => d.csv_content === csvContent) || existing[0];
+    return match as SavedDataset;
+  }
 
   const { data, error } = await supabase
     .from("datasets")
@@ -70,6 +88,7 @@ export async function saveDatasetToSupabase(
 
   if (error) {
     console.error("Error saving dataset to Supabase:", error);
+    toast.error(`Database error: ${error.message}`);
     return null;
   }
   return data as SavedDataset;
@@ -133,6 +152,31 @@ export async function getOrCreateChatSession(
 
   if (error) {
     console.error("Error creating chat session:", error);
+    return null;
+  }
+  return data as ChatSession;
+}
+
+export async function createNewChatSession(
+  datasetId: string,
+  title: string = "Data Exploration",
+): Promise<ChatSession | null> {
+  if (!supabase) return null;
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return null;
+
+  const { data, error } = await supabase
+    .from("chat_sessions")
+    .insert({
+      dataset_id: datasetId,
+      user_id: userData.user.id,
+      title,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating new chat session:", error);
     return null;
   }
   return data as ChatSession;

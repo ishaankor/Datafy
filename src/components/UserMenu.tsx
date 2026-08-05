@@ -12,13 +12,15 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { User as UserIcon, LogOut, Database, LogIn } from "lucide-react";
 
+import { Link } from "@tanstack/react-router";
+
 interface UserMenuProps {
   user: User | null;
-  onOpenAuth: () => void;
+  onOpenAuth?: () => void;
   onOpenHistory: () => void;
 }
 
-export function UserMenu({ user, onOpenAuth, onOpenHistory }: UserMenuProps) {
+export function UserMenu({ user, onOpenHistory }: UserMenuProps) {
   const handleSignOut = async () => {
     if (!supabase) return;
     const { error } = await supabase.auth.signOut();
@@ -31,14 +33,15 @@ export function UserMenu({ user, onOpenAuth, onOpenHistory }: UserMenuProps) {
 
   if (!user) {
     return (
-      <Button
-        onClick={onOpenAuth}
-        variant="outline"
-        size="sm"
-        className="border-border text-xs text-foreground hover:text-gold hover:border-gold/50"
-      >
-        <LogIn className="w-3.5 h-3.5 mr-1.5 text-gold" /> Sign In
-      </Button>
+      <Link to="/auth">
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-border text-xs text-foreground hover:text-gold hover:border-gold/50"
+        >
+          <LogIn className="w-3.5 h-3.5 mr-1.5 text-gold" /> Sign In
+        </Button>
+      </Link>
     );
   }
 
@@ -65,19 +68,30 @@ export function UserMenu({ user, onOpenAuth, onOpenHistory }: UserMenuProps) {
             {initials}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 bg-background border-border text-foreground">
+        <DropdownMenuContent
+          align="end"
+          className="w-56 bg-background border-border text-foreground"
+        >
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
               <p className="text-xs font-medium leading-none text-foreground">{user.email}</p>
-              <p className="text-[10px] leading-none text-muted-foreground font-mono">Authenticated Session</p>
+              <p className="text-[10px] leading-none text-muted-foreground font-mono">
+                Authenticated Session
+              </p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-border" />
-          <DropdownMenuItem onClick={onOpenHistory} className="text-xs cursor-pointer focus:bg-secondary">
+          <DropdownMenuItem
+            onClick={onOpenHistory}
+            className="text-xs cursor-pointer focus:bg-secondary"
+          >
             <Database className="w-3.5 h-3.5 mr-2 text-gold" /> My Saved Datasets
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-border" />
-          <DropdownMenuItem onClick={handleSignOut} className="text-xs text-red-400 cursor-pointer focus:bg-red-500/10">
+          <DropdownMenuItem
+            onClick={handleSignOut}
+            className="text-xs text-red-400 cursor-pointer focus:bg-red-500/10"
+          >
             <LogOut className="w-3.5 h-3.5 mr-2" /> Sign Out
           </DropdownMenuItem>
         </DropdownMenuContent>

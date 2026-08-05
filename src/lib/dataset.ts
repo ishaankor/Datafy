@@ -103,10 +103,7 @@ export function datasetSummary(ds: Dataset): string {
         `  - ${c.name} [number] mean=${s ? fmt(s.mean) : "—"} min=${s ? fmt(s.min) : "—"} max=${s ? fmt(s.max) : "—"}`,
       );
     } else {
-      const sample = (c.values as string[])
-        .filter(Boolean)
-        .slice(0, 5)
-        .join(", ");
+      const sample = (c.values as string[]).filter(Boolean).slice(0, 5).join(", ");
       lines.push(`  - ${c.name} [${c.kind}] sample: ${sample}`);
     }
   });

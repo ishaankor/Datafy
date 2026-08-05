@@ -1,224 +1,226 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { MessageCircle, RotateCcw } from "lucide-react";
-import { DataInput } from "@/components/DataInput";
-import {
-  DataTable,
-  emptySelection,
-  selectionToCSV,
-  selectionLabel,
-  type Selection,
-} from "@/components/DataTable";
-import { AIChat } from "@/components/AIChat";
-import { UserMenu } from "@/components/UserMenu";
-import { AuthModal } from "@/components/AuthModal";
-import { DatasetHistoryDrawer } from "@/components/DatasetHistoryDrawer";
-import { parseCSV, datasetSummary } from "@/lib/dataset";
-import { supabase, saveDatasetToSupabase } from "@/lib/supabase";
-import { type User } from "@supabase/supabase-js";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { HomeDemo } from "@/components/HomeDemo";
+import { HomeGuidedTour } from "@/components/HomeGuidedTour";
+import {
+  Sparkles,
+  ArrowRight,
+  Database,
+  Shield,
+  Zap,
+  BarChart3,
+  MessageCircle,
+  FileSpreadsheet,
+  CheckCircle2,
+  MousePointerClick,
+  Layers,
+  Lock,
+} from "lucide-react";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  component: Home,
 });
 
-function Index() {
-  const [csv, setCsv] = useState<string | null>(null);
-  const [name, setName] = useState("Untitled");
-  const [activeDatasetId, setActiveDatasetId] = useState<string | null>(null);
-  const [chatOpen, setChatOpen] = useState(true);
-  const [selection, setSelection] = useState<Selection>(emptySelection());
-  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
-
-  // Auth & Session State
-  const [user, setUser] = useState<User | null>(null);
-  const [authOpen, setAuthOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
-
-  useEffect(() => {
-    if (!supabase) return;
-
-    // Get current user session
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
-
-    // Listen to Auth State Changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-  const dataset = useMemo(() => {
-    if (!csv) return null;
-    try {
-      return parseCSV(csv);
-    } catch {
-      toast.error("Could not parse CSV. Check the format.");
-      return null;
-    }
-  }, [csv]);
-
-  const handleDatasetLoad = async (text: string, datasetName: string, loadedDatasetId?: string) => {
-    setCsv(text);
-    setName(datasetName);
-    setSelection(emptySelection());
-
-    if (loadedDatasetId) {
-      setActiveDatasetId(loadedDatasetId);
-      return;
-    }
-
-    // Auto-save to Supabase if logged in
-    if (user && supabase) {
-      try {
-        const parsed = parseCSV(text);
-        const saved = await saveDatasetToSupabase(
-          datasetName,
-          text,
-          parsed.rows.length,
-          parsed.columns.length,
-        );
-        if (saved) {
-          setActiveDatasetId(saved.id);
-          toast.success("Dataset saved to your account!");
-        }
-      } catch (err) {
-        console.error("Auto-save failed:", err);
-      }
-    }
-  };
-
-  const datasetContext = useMemo(
-    () => (dataset ? datasetSummary(dataset) : ""),
-    [dataset],
-  );
-
-  const selCSV = useMemo(
-    () => (dataset ? selectionToCSV(dataset, selection) : ""),
-    [dataset, selection],
-  );
-
-  const selLabel = useMemo(() => selectionLabel(selection), [selection]);
-
-  if (!dataset) {
-    return (
-      <main className="bg-background text-foreground min-h-screen relative">
-        <header className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-10">
-          <span className="font-display text-xl font-semibold">
-            Datafy<span className="text-gold">.</span>
-          </span>
-          <UserMenu
-            user={user}
-            onOpenAuth={() => setAuthOpen(true)}
-            onOpenHistory={() => setHistoryOpen(true)}
-          />
-        </header>
-
-        <DataInput onLoad={(text, n) => handleDatasetLoad(text, n)} />
-
-        <AuthModal
-          open={authOpen}
-          onOpenChange={setAuthOpen}
-          onSuccess={() => {
-            setHistoryOpen(true);
-          }}
-        />
-
-        <DatasetHistoryDrawer
-          open={historyOpen}
-          onOpenChange={setHistoryOpen}
-          onSelectDataset={(text, datasetName, id) => handleDatasetLoad(text, datasetName, id)}
-        />
-      </main>
-    );
-  }
-
+function Home() {
   return (
-    <main key={name} className="bg-background text-foreground h-screen overflow-hidden animate-fade-in">
-      <nav className="bg-background/90 backdrop-blur border-b border-border animate-fade-in" style={{ animationDelay: "80ms", animationFillMode: "backwards" }}>
-        <div className="px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="font-display text-xl font-semibold">
-              Datafy<span className="text-gold">.</span>
+    <main className="min-h-screen bg-background text-foreground animate-fade-in space-y-16 pb-20">
+      {/* 1. HERO SECTION */}
+      <section className="relative pt-20 pb-16 px-6 max-w-7xl mx-auto text-center space-y-8">
+        {/* TOP BADGE */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gold/10 border border-gold/30 text-gold text-xs font-mono tracking-wide shadow-sm animate-pulse">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Vol. I — Editorial AI Data Workspace</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+        </div>
+
+        {/* HEADLINE */}
+        <div className="space-y-4 max-w-4xl mx-auto">
+          <h1 className="font-display text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-foreground leading-[1.08]">
+            Turn raw data into an{" "}
+            <span className="text-gold italic font-serif block sm:inline">
+              editorial canvas.
             </span>
-            <span className="hidden md:block text-xs text-muted-foreground font-mono">
-              / {name} · {dataset.rows.length} rows × {dataset.columns.length} cols
-            </span>
+          </h1>
+          <p className="text-muted-foreground text-base sm:text-2xl max-w-2xl mx-auto leading-relaxed font-serif pt-2">
+            Upload CSVs, explore interactive grids, render live charts, and research your dataset
+            alongside an inline AI Curator Sidekick.
+          </p>
+        </div>
+
+        {/* HERO CTA BUTTONS */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <Link to="/workspace">
+            <Button
+              size="lg"
+              className="bg-gold hover:bg-gold-soft text-ink font-semibold px-8 py-6 text-sm rounded-md shadow-lg shadow-gold/20 hover:scale-[1.02] transition-all w-full sm:w-auto"
+            >
+              <Sparkles className="w-4 h-4 mr-2" /> Launch Workspace{" "}
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
+
+          <a href="#demo">
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-border text-foreground hover:text-gold hover:border-gold/50 px-6 py-6 text-sm rounded-md w-full sm:w-auto font-mono"
+            >
+              Explore Live Demo ↓
+            </Button>
+          </a>
+        </div>
+
+        {/* PERFORMANCE METRICS TICKER */}
+        <div className="pt-10 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-center">
+          <div className="p-4 rounded-xl bg-card/30 border border-border/50 backdrop-blur-xs hover:border-gold/40 transition-colors">
+            <p className="font-display text-3xl font-bold text-gold">0ms</p>
+            <p className="text-[11px] text-muted-foreground font-mono mt-1">Client Cold-Start</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setCsv(null);
-                setActiveDatasetId(null);
-                setSelection(emptySelection());
-              }}
-              className="text-muted-foreground hover:text-gold"
-            >
-              <RotateCcw className="w-3.5 h-3.5 mr-2" /> New dataset
-            </Button>
-            <Button
-              onClick={() => setChatOpen((v) => !v)}
-              className="bg-gold hover:bg-gold-soft text-ink rounded-sm"
-              size="sm"
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              {chatOpen ? "Hide sidekick" : "Open sidekick"}
-            </Button>
-            <UserMenu
-              user={user}
-              onOpenAuth={() => setAuthOpen(true)}
-              onOpenHistory={() => setHistoryOpen(true)}
-            />
+          <div className="p-4 rounded-xl bg-card/30 border border-border/50 backdrop-blur-xs hover:border-gold/40 transition-colors">
+            <p className="font-display text-3xl font-bold text-gold">100%</p>
+            <p className="text-[11px] text-muted-foreground font-mono mt-1">Postgres RLS Private</p>
+          </div>
+          <div className="p-4 rounded-xl bg-card/30 border border-border/50 backdrop-blur-xs hover:border-gold/40 transition-colors">
+            <p className="font-display text-3xl font-bold text-gold">Instant</p>
+            <p className="text-[11px] text-muted-foreground font-mono mt-1">CSV & Recharts Engine</p>
+          </div>
+          <div className="p-4 rounded-xl bg-card/30 border border-border/50 backdrop-blur-xs hover:border-gold/40 transition-colors">
+            <p className="font-display text-3xl font-bold text-gold">AI</p>
+            <p className="text-[11px] text-muted-foreground font-mono mt-1">Curator Sidekick</p>
           </div>
         </div>
-      </nav>
+      </section>
 
-      <div
-        className={`animate-fade-in ${chatOpen ? "sm:pr-[460px] transition-[padding] duration-300" : ""}`}
-        style={{ animationDelay: "180ms", animationFillMode: "backwards" }}
-      >
-        <DataTable
-          dataset={dataset}
-          selection={selection}
-          setSelection={setSelection}
-          onAsk={(p) => {
-            setChatOpen(true);
-            setPendingPrompt(p);
-          }}
-        />
-      </div>
+      {/* HAIRLINE DIVIDER */}
+      <div className="hairline max-w-5xl mx-auto" />
 
-      <AIChat
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-        datasetContext={datasetContext}
-        selectionCSV={selCSV}
-        selectionLabel={selLabel}
-        pendingPrompt={pendingPrompt}
-        onPromptConsumed={() => setPendingPrompt(null)}
-      />
+      {/* 2. INTERACTIVE LIVE DEMO SHOWCASE */}
+      <section className="px-6 max-w-7xl mx-auto">
+        <HomeDemo />
+      </section>
 
-      <AuthModal
-        open={authOpen}
-        onOpenChange={setAuthOpen}
-        onSuccess={() => {
-          setHistoryOpen(true);
-        }}
-      />
+      {/* HAIRLINE DIVIDER */}
+      <div className="hairline max-w-5xl mx-auto" />
 
-      <DatasetHistoryDrawer
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-        onSelectDataset={(text, datasetName, id) => handleDatasetLoad(text, datasetName, id)}
-      />
+      {/* 3. STEP-BY-STEP GUIDED TOUR */}
+      <HomeGuidedTour />
+
+      {/* HAIRLINE DIVIDER */}
+      <div className="hairline max-w-5xl mx-auto" />
+
+      {/* 4. FEATURES MATRIX GRID */}
+      <section className="py-16 px-6 max-w-7xl mx-auto space-y-12">
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/30 text-gold text-xs font-mono tracking-wide">
+            <Layers className="w-3.5 h-3.5" />
+            <span>Capability Suite</span>
+          </div>
+          <h2 className="font-display text-4xl font-bold">Built for Rigorous Research</h2>
+          <p className="text-xs text-muted-foreground max-w-lg mx-auto font-serif">
+            Everything you need to parse, visualize, and persist data sessions seamlessly.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="p-6 rounded-xl bg-card/30 border border-border/80 space-y-4 hover:border-gold/50 transition-all group">
+            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
+              <FileSpreadsheet className="w-5 h-5" />
+            </div>
+            <h3 className="font-display text-xl font-semibold">Instant CSV Ingestion</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Drag and drop any raw `.csv` file or paste tab-delimited text. Auto-detects schema,
+              data types, row counts, and numerical columns instantly.
+            </p>
+          </div>
+
+          <div className="p-6 rounded-xl bg-card/30 border border-border/80 space-y-4 hover:border-gold/50 transition-all group">
+            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
+              <MousePointerClick className="w-5 h-5" />
+            </div>
+            <h3 className="font-display text-xl font-semibold">Spatial Context Selection</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Click individual cells, rows, or columns to isolate context. Datafy builds focused spatial
+              payloads so AI responses pinpoint exact metrics without hallucination.
+            </p>
+          </div>
+
+          <div className="p-6 rounded-xl bg-card/30 border border-border/80 space-y-4 hover:border-gold/50 transition-all group">
+            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <h3 className="font-display text-xl font-semibold">Dynamic Recharts Graphics</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Render interactive Bar, Line, Area, and Pie charts directly from table selections or
+              AI prompt commands with full SVG tooltip interactivity.
+            </p>
+          </div>
+
+          <div className="p-6 rounded-xl bg-card/30 border border-border/80 space-y-4 hover:border-gold/50 transition-all group">
+            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
+              <MessageCircle className="w-5 h-5" />
+            </div>
+            <h3 className="font-display text-xl font-semibold">AI Curator Sidekick</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Ask questions in natural language. Receive formatted markdown summaries, statistical
+              explanations, formula verification, and recommended next steps.
+            </p>
+          </div>
+
+          <div className="p-6 rounded-xl bg-card/30 border border-border/80 space-y-4 hover:border-gold/50 transition-all group">
+            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
+              <Lock className="w-5 h-5" />
+            </div>
+            <h3 className="font-display text-xl font-semibold">Supabase RLS Persistence</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Sign in to save your datasets, chat threads, and visualizations safely to your personal
+              cloud account powered by PostgreSQL Row Level Security.
+            </p>
+          </div>
+
+          <div className="p-6 rounded-xl bg-card/30 border border-border/80 space-y-4 hover:border-gold/50 transition-all group">
+            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <h3 className="font-display text-xl font-semibold">Editorial Noir Aesthetics</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Crafted with Cormorant Garamond typography, gold foil accents, dark museum contrast,
+              and micro-animations for an executive-grade experience.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. FINAL CALL TO ACTION BANNER */}
+      <section className="py-12 px-6 max-w-5xl mx-auto">
+        <div className="p-10 sm:p-14 rounded-3xl bg-gradient-to-r from-card via-background to-card border border-gold/40 text-center space-y-6 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-gold to-transparent opacity-80" />
+
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 text-gold text-xs font-mono">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Ready to Begin</span>
+          </div>
+
+          <h2 className="font-display text-4xl sm:text-5xl font-bold tracking-tight text-foreground">
+            Experience the Editorial Data Workspace
+          </h2>
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed font-serif">
+            No configuration required. Launch the workspace and start exploring your data in
+            seconds.
+          </p>
+
+          <div className="flex justify-center gap-3 pt-2">
+            <Link to="/workspace">
+              <Button
+                size="lg"
+                className="bg-gold hover:bg-gold-soft text-ink font-semibold px-8 text-sm rounded-md shadow-lg shadow-gold/20 hover:scale-[1.02] transition-all"
+              >
+                <Sparkles className="w-4 h-4 mr-2" /> Launch Free Workspace{" "}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

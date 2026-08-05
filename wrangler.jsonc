@@ -5,15 +5,15 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "dist/server/server.js",
   "assets": {
-    "directory": "dist/client"
+    "directory": "dist/client",
   },
   "observability": {
     "logs": {
       "enabled": true,
-      "invocation_logs": true
+      "invocation_logs": true,
     },
     "traces": {
-      "enabled": false
-    }
-  }
+      "enabled": false,
+    },
+  },
 }

@@ -16,12 +16,12 @@ Modern data analysis is often fragmented across Jupyter notebooks, BI dashboards
 
 The architecture of Datafy! was designed to prioritize speed, analytical autonomy, and context resilience, overcoming the traditional bottlenecks of LLM-based agentic workflows:
 
-* **Optimized Agentic Workflow:** Powered by LangChain, the system utilizes a custom, single-pass unified execution node. By collapsing heavy, multi-agent ReAct loops into a streamlined architecture, generation latency is drastically reduced while maintaining elite reasoning capabilities.
-* **Secure Python Sandbox:** The backend features a dynamic Python REPL that executes Pandas manipulations and statistical models on the fly.
-* **Context-Safe Visual Extraction:** Matplotlib charts are rendered to the server's disk and converted directly to Base64 strings. This allows the system to bypass massive context-window bloat, ensuring smaller, highly capable fallback models never crash due to token limits.
-* **Dynamic Matrix Parsing:** The TypeScript frontend distinguishes between dense and sparse data selections, transforming user highlights into structured key-value CSV subsets. The backend intelligently pivots and filters these subsets without corrupting the primary dataset context.
-* **Resilient Fallback Hierarchy:** Engineered to maintain maximum uptime using OpenRouter. The system utilizes a strict fallback chain of highly capable models (e.g., Nemotron-3, Llama-3.3-70B, and Gemini Flash) to avoid inference queuing and seamlessly handle API volatility.
-* **Pedagogical AI Design:** The final synthesis engine is explicitly prompted to generate questions that target core mathematical concepts, guiding the user toward a deeper understanding of their data distributions and statistical outcomes.
+- **Optimized Agentic Workflow:** Powered by LangChain, the system utilizes a custom, single-pass unified execution node. By collapsing heavy, multi-agent ReAct loops into a streamlined architecture, generation latency is drastically reduced while maintaining elite reasoning capabilities.
+- **Secure Python Sandbox:** The backend features a dynamic Python REPL that executes Pandas manipulations and statistical models on the fly.
+- **Context-Safe Visual Extraction:** Matplotlib charts are rendered to the server's disk and converted directly to Base64 strings. This allows the system to bypass massive context-window bloat, ensuring smaller, highly capable fallback models never crash due to token limits.
+- **Dynamic Matrix Parsing:** The TypeScript frontend distinguishes between dense and sparse data selections, transforming user highlights into structured key-value CSV subsets. The backend intelligently pivots and filters these subsets without corrupting the primary dataset context.
+- **Resilient Fallback Hierarchy:** Engineered to maintain maximum uptime using OpenRouter. The system utilizes a strict fallback chain of highly capable models (e.g., Nemotron-3, Llama-3.3-70B, and Gemini Flash) to avoid inference queuing and seamlessly handle API volatility.
+- **Pedagogical AI Design:** The final synthesis engine is explicitly prompted to generate questions that target core mathematical concepts, guiding the user toward a deeper understanding of their data distributions and statistical outcomes.
 
 ---
 
@@ -29,15 +29,15 @@ The architecture of Datafy! was designed to prioritize speed, analytical autonom
 
 **Frontend**
 
-* **Framework:** React & TypeScript
-* **Visuals:** Tailwind CSS, Recharts, and custom Base64 Matplotlib Parsers
-* **State Management:** React Hooks and custom hooks
+- **Framework:** React & TypeScript
+- **Visuals:** Tailwind CSS, Recharts, and custom Base64 Matplotlib Parsers
+- **State Management:** React Hooks and custom hooks
 
 **Backend & AI**
 
-* **Framework:** FastAPI (Python)
-* **Agentic Orchestration:** LangGraph & LangChain
-* **Data Science Engine:** Pandas, Matplotlib, Scikit-learn
-* **LLM Infrastructure:** OpenRouter API
+- **Framework:** FastAPI (Python)
+- **Agentic Orchestration:** LangGraph & LangChain
+- **Data Science Engine:** Pandas, Matplotlib, Scikit-learn
+- **LLM Infrastructure:** OpenRouter API
 
 ---

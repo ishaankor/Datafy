@@ -22,15 +22,18 @@ export function DataInput({ onLoad }: Props) {
   return (
     <div className="min-h-screen flex items-center justify-center px-6 py-16 animate-fade-in">
       <div className="w-full max-w-2xl">
-        <div className="text-center mb-12 animate-fade-in" style={{ animationDelay: "60ms", animationFillMode: "backwards" }}>
+        <div
+          className="text-center mb-12 animate-fade-in"
+          style={{ animationDelay: "60ms", animationFillMode: "backwards" }}
+        >
           <p className="eyebrow mb-4">Vol. I — A Curated Reading of Data</p>
           <h1 className="text-6xl md:text-7xl font-display leading-[0.95] mb-6">
             The data, <em className="text-gold">interpreted</em>.
           </h1>
           <div className="hairline w-32 mx-auto my-6" />
           <p className="text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Bring numbers. Receive an editorial canvas — composed, annotated, and ready
-            to be questioned. A quiet curator stands by to explain what you are seeing.
+            Bring numbers. Receive an editorial canvas — composed, annotated, and ready to be
+            questioned. A quiet curator stands by to explain what you are seeing.
           </p>
         </div>
 
@@ -79,13 +82,14 @@ export function DataInput({ onLoad }: Props) {
               </p>
             </div>
 
-            <p className="eyebrow text-[0.6rem] mt-2 opacity-60">
-              .csv · header row required
-            </p>
+            <p className="eyebrow text-[0.6rem] mt-2 opacity-60">.csv · header row required</p>
           </div>
 
           {loading && (
-            <div className="absolute bottom-0 left-0 h-px bg-gold/70 animate-[loading_0.4s_ease-out_forwards]" style={{ width: "100%" }} />
+            <div
+              className="absolute bottom-0 left-0 h-px bg-gold/70 animate-[loading_0.4s_ease-out_forwards]"
+              style={{ width: "100%" }}
+            />
           )}
         </div>
       </div>

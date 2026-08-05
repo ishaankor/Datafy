@@ -90,3 +90,11 @@ CREATE INDEX IF NOT EXISTS idx_datasets_user_id ON public.datasets(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_sessions_dataset_id ON public.chat_sessions(dataset_id);
 CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_id ON public.chat_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON public.chat_messages(session_id);
+
+-- GRANT SCHEMA & TABLE PERMISSIONS TO ANON AND AUTHENTICATED ROLES
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+
+-- NOTIFY POSTGREST TO RELOAD SCHEMA CACHE
+NOTIFY pgrst, 'reload schema';

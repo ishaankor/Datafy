@@ -1,7 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Button } from './ui/button';
-import { X, Send, Sparkles } from 'lucide-react'; 
-import { parseChartSegments, ChartRenderer, ImageRenderer } from '@/components/ChartRenderer';
+import React, { useState, useEffect, useRef } from "react";
+import { Button } from "./ui/button";
+import { X, Send, Sparkles } from "lucide-react";
+import { parseChartSegments, ChartRenderer, ImageRenderer } from "@/components/ChartRenderer";
+import { saveChatMessage } from "@/lib/supabase";
+
+export type Message = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};
 
 interface AIChatProps {
   open: boolean;
@@ -11,13 +18,11 @@ interface AIChatProps {
   selectionLabel?: string | null;
   pendingPrompt?: string | null;
   onPromptConsumed?: () => void;
+  sessionId?: string | null;
+  initialMessages?: Message[];
 }
 
-type Message = {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-};
+import ReactMarkdown from "react-markdown";
 
 export const AIChat = ({
   open,
@@ -26,13 +31,18 @@ export const AIChat = ({
   selectionCSV,
   selectionLabel,
   pendingPrompt,
-  onPromptConsumed
+  onPromptConsumed,
+  sessionId,
+  initialMessages = [],
 }: AIChatProps) => {
-
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
+
+  useEffect(() => {
+    setMessages(initialMessages);
+  }, [initialMessages, sessionId]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -51,42 +61,58 @@ export const AIChat = ({
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
   }, [messages, isLoading]);
 
   const append = async (content: string) => {
-    const userMsg: Message = { id: crypto.randomUUID(), role: 'user', content };
-    setMessages(prev => [...prev, userMsg]);
+    const userMsg: Message = { id: crypto.randomUUID(), role: "user", content };
+    setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
+
+    if (sessionId) {
+      saveChatMessage(sessionId, "user", content).catch(console.error);
+    }
 
     try {
       const payload = {
-        messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
+        messages: [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
         datasetContext: liveContext.current.datasetContext,
         selectionCSV: liveContext.current.activeSelectionCSV,
         selectionLabel: liveContext.current.activeSelectionLabel,
       };
 
-      const res = await fetch('https://datafy-brain.onrender.com/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
-      
-      setMessages(prev => [...prev, { 
-        id: crypto.randomUUID(), 
-        role: 'assistant', 
-        content: data.response || "No response generated." 
-      }]);
-    } catch (error) {
-      setMessages(prev => [...prev, { 
-        id: crypto.randomUUID(), 
-        role: 'assistant', 
-        content: "Error communicating with the Python backend." 
-      }]);
+      const replyText = data.response || "No response generated.";
+
+      const assistantMsg: Message = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: replyText,
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+
+      if (sessionId) {
+        saveChatMessage(sessionId, "assistant", replyText).catch(console.error);
+      }
+    } catch (error: any) {
+      console.error("Chat API fetch error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content:
+            "⚠️ Request timed out or encountered a network error. Try highlighting specific columns or rows for faster analysis.",
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -134,7 +160,8 @@ export const AIChat = ({
           <div className="text-center py-10">
             <Sparkles className="w-7 h-7 text-gold mx-auto mb-4 opacity-70" />
             <p className="font-display text-lg text-foreground/90 leading-snug max-w-[300px] mx-auto">
-              Highlight any part of the table and I'll plot it, summarize it, or tell you what's interesting.
+              Highlight any part of the table and I'll plot it, summarize it, or tell you what's
+              interesting.
             </p>
             <p className="text-xs text-muted-foreground/70 mt-4">
               Or just ask me anything about your data.
@@ -143,11 +170,11 @@ export const AIChat = ({
         )}
 
         {messages.map((m) => {
-          const segments = m.role === 'assistant' ? parseChartSegments(m.content) : [];
-          
+          const segments = m.role === "assistant" ? parseChartSegments(m.content) : [];
+
           return (
-            <div key={m.id} className={m.role === 'user' ? "flex justify-end" : "space-y-1"}>
-              {m.role === 'user' ? (
+            <div key={m.id} className={m.role === "user" ? "flex justify-end" : "space-y-1"}>
+              {m.role === "user" ? (
                 <div className="max-w-[88%] bg-gold text-ink px-3.5 py-2 rounded-sm text-sm">
                   {m.content}
                 </div>
@@ -157,12 +184,66 @@ export const AIChat = ({
                   <div className="text-sm leading-relaxed text-foreground/90 space-y-4">
                     {segments.map((seg, i) => {
                       if (seg.kind === "chart") return <ChartRenderer key={i} spec={seg.spec} />;
-                      if (seg.kind === "image") return <ImageRenderer key={i} alt={seg.alt} src={seg.src} />;
-                      if (seg.kind === "error") return <p key={i} className="text-xs text-destructive italic">{seg.text}</p>;
+                      if (seg.kind === "image")
+                        return <ImageRenderer key={i} alt={seg.alt} src={seg.src} />;
+                      if (seg.kind === "error")
+                        return (
+                          <p key={i} className="text-xs text-destructive italic">
+                            {seg.text}
+                          </p>
+                        );
                       return (
-                        <p key={i} className="whitespace-pre-wrap">
-                          {seg.text}
-                        </p>
+                        <div
+                          key={i}
+                          className="text-sm leading-relaxed text-foreground/90 font-serif space-y-2"
+                        >
+                          <ReactMarkdown
+                            components={{
+                              h1: ({ children }) => (
+                                <h1 className="text-base font-bold text-gold font-display mt-3 mb-1">
+                                  {children}
+                                </h1>
+                              ),
+                              h2: ({ children }) => (
+                                <h2 className="text-sm font-bold text-gold font-display mt-2 mb-1">
+                                  {children}
+                                </h2>
+                              ),
+                              h3: ({ children }) => (
+                                <h3 className="text-xs font-semibold text-gold font-display mt-2 mb-1">
+                                  {children}
+                                </h3>
+                              ),
+                              p: ({ children }) => (
+                                <p className="mb-2 leading-relaxed">{children}</p>
+                              ),
+                              strong: ({ children }) => (
+                                <strong className="font-semibold text-gold">{children}</strong>
+                              ),
+                              em: ({ children }) => (
+                                <em className="italic text-foreground/80">{children}</em>
+                              ),
+                              ul: ({ children }) => (
+                                <ul className="list-disc pl-4 space-y-1 my-2 text-xs">
+                                  {children}
+                                </ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol className="list-decimal pl-4 space-y-1 my-2 text-xs">
+                                  {children}
+                                </ol>
+                              ),
+                              li: ({ children }) => <li className="leading-normal">{children}</li>,
+                              code: ({ children }) => (
+                                <code className="bg-secondary/70 text-gold px-1.5 py-0.5 rounded font-mono text-[11px]">
+                                  {children}
+                                </code>
+                              ),
+                            }}
+                          >
+                            {seg.text}
+                          </ReactMarkdown>
+                        </div>
                       );
                     })}
                   </div>
@@ -206,12 +287,16 @@ export const AIChat = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 submit();
               }
             }}
-            placeholder={activeSelectionLabel ? "Ask about the selection..." : "Ask me anything about the data..."}
+            placeholder={
+              activeSelectionLabel
+                ? "Ask about the selection..."
+                : "Ask me anything about the data..."
+            }
             rows={2}
             className="flex-1 bg-ink/50 border border-border rounded-sm p-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-gold/50 resize-none"
           />

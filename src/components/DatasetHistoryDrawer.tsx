@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { fetchUserDatasets, deleteUserDataset, type SavedDataset } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -54,7 +60,10 @@ export function DatasetHistoryDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md bg-background border-border text-foreground p-6 overflow-y-auto">
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-md bg-background border-border text-foreground p-6 overflow-y-auto"
+      >
         <SheetHeader className="mb-4">
           <SheetTitle className="text-xl font-display flex items-center gap-2">
             <Database className="w-5 h-5 text-gold" /> My Workspace Datasets
