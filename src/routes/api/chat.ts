@@ -97,39 +97,36 @@ CRITICAL SELECTION & SCOPING RULES:
 3. CONVERSATION HISTORY USAGE: Use conversation history strictly for clarifying user intent or answering follow-up questions. When the user highlights a table selection or asks "Plot this" / "Analyze selection", treat the active 'Selection Data' as the absolute boundary.
 
 CHART GENERATION INSTRUCTIONS:
-If the user asks to create, plot, draw, or visualize a graph or chart (or clicks "Plot this"), YOU MUST GENERATE A VALID RECHARTS JSON SPEC IN A MARKDOWN CODE BLOCK AS FOLLOWS:
+If the user asks to create, plot, draw, or visualize a graph or chart (or clicks "Plot this"), YOU MUST OUTPUT BOTH:
+1. A Python Seaborn/Matplotlib execution code block (\`\`\`python ... \`\`\`) that reads 'current_data.csv' using pandas and generates a high-quality visualization using sns or plt.
+2. A Recharts JSON spec (\`\`\`chart ... \`\`\`) for interactive rendering.
 
-For standard charts:
-\`\`\`chart
-{
-  "type": "bar",
-  "title": "Descriptive Chart Title",
-  "x": "ColumnA",
-  "y": ["ColumnB"],
-  "data": [
-    { "ColumnA": "Value 1", "ColumnB": 100 },
-    { "ColumnA": "Value 2", "ColumnB": 150 }
-  ]
-}
+Example Python Block:
+\`\`\`python
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+df = pd.read_csv('current_data.csv')
+plt.figure(figsize=(9, 4.5), dpi=150)
+sns.scatterplot(data=df, x='ColumnA', y='ColumnB', hue='CategoricalC' if 'CategoricalC' in df.columns else None, palette='bright')
+plt.title('Descriptive Plot Title')
 \`\`\`
 
-For multivariate or scatter charts with a 3rd categorical variable (ONLY IF present in Selection Data):
+Example Chart Block:
 \`\`\`chart
 {
   "type": "multivariate",
   "title": "Descriptive Chart Title",
   "x": "ColumnA",
   "y": ["ColumnB"],
-  "category": "CategoricalColumnC",
-  "data": [
-    { "ColumnA": 62, "ColumnB": 100, "CategoricalColumnC": "FALSE" },
-    { "ColumnA": 64, "ColumnB": 115, "CategoricalColumnC": "TRUE" }
-  ]
+  "category": "CategoricalC",
+  "data": [ ... ]
 }
 \`\`\`
 
 Always include all columns and exact data rows in the "data" array.
-Do NOT just write text describing a chart without outputting the \`\`\`chart ... \`\`\` JSON block!`,
+Do NOT just write text describing a chart without outputting the \`\`\`python\`\`\` and \`\`\`chart\`\`\` blocks!`,
                 },
                 { role: "user", content: lastUserMsg },
               ],

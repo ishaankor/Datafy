@@ -40,6 +40,7 @@ export interface ChartSpec {
 export type Segment =
   | { kind: "text"; text: string }
   | { kind: "chart"; spec: ChartSpec }
+  | { kind: "python"; code: string }
   | { kind: "image"; alt: string; src: string }
   | { kind: "error"; text: string };
 
@@ -466,7 +467,7 @@ export function parseChartSegments(text: string): Segment[] {
   const segments: Segment[] = [];
 
   const re =
-    /(?:```chart\s*\n([\s\S]*?)```)|(?:!\[([^\]]*)\]\((data:image\/[a-zA-Z0-9;+,/=\r\n\s]+)\))/g;
+    /(?:```chart\s*\n([\s\S]*?)```)|(?:```python\s*\n([\s\S]*?)```)|(?:!\[([^\]]*)\]\((data:image\/[a-zA-Z0-9;+,/=\r\n\s]+)\))/g;
 
   let last = 0;
   let m: RegExpExecArray | null;
@@ -482,9 +483,12 @@ export function parseChartSegments(text: string): Segment[] {
       if (spec && typeof spec === "object" && (spec.data || spec.type)) {
         segments.push({ kind: "chart", spec });
       }
-    } else if (m[2] !== undefined && m[3]) {
-      // It's a new Base64 Matplotlib image
-      segments.push({ kind: "image", alt: m[2], src: m[3] });
+    } else if (m[2]) {
+      // It's an executable Python code block
+      segments.push({ kind: "python", code: m[2].trim() });
+    } else if (m[3] !== undefined && m[4]) {
+      // It's a pre-rendered Base64 Matplotlib image
+      segments.push({ kind: "image", alt: m[3], src: m[4] });
     }
 
     last = re.lastIndex;
