@@ -22,6 +22,13 @@ function truncateCSVForLLM(csvString?: string | null, maxRows = 40, maxChars = 3
   return `${header}\n${sampleRows.join("\n")}\n... [TRUNCATED: Showing first ${maxRows} sample rows out of ${totalRows} total rows for context]`;
 }
 
+function stripBase64Images(content: string): string {
+  if (!content) return "";
+  return content
+    .replace(/!\[.*?\]\(data:image\/[a-zA-Z0-9.+_-]+;base64,[^)]+\)/g, "[Generated Chart Image]")
+    .replace(/data:image\/[a-zA-Z0-9.+_-]+;base64,[a-zA-Z0-9+/=]+/g, "[Generated Chart Image]");
+}
+
 export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
@@ -42,7 +49,7 @@ export const Route = createFileRoute("/api/chat")({
         const pythonPayload = {
           messages: recentMessages.map((m) => ({
             role: m.role === "assistant" ? "assistant" : "user",
-            content: typeof m.content === "string" ? m.content : "",
+            content: typeof m.content === "string" ? stripBase64Images(m.content) : "",
           })),
           datasetContext: safeDatasetContext,
           selectionCSV: safeSelectionCSV,
@@ -85,21 +92,25 @@ export const Route = createFileRoute("/api/chat")({
 
         // Edge AI Fallback using Groq LLM (llama-3.3-70b-versatile)
         const groqApiKey =
-          (typeof process !== "undefined" && process.env?.GROQ_API_KEY) ||
-          "gsk_YxYxYxYxYxYxYxYxYxYxYxYxYxYxYxYxYxYxYxYxYxYxYxYx"; // Fallback key placeholder
+          (typeof process !== "undefined" && process.env?.GROQ_API_KEY) || "";
 
-        const lastUserMsg =
+        const rawUserMsg =
           [...body.messages].reverse().find((m) => m.role === "user")?.content || "";
+        const lastUserMsg = stripBase64Images(rawUserMsg);
 
-        try {
-          const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${groqApiKey}`,
-              "Content-Type": "application/json",
-            },
+        if (groqApiKey) {
+          try {
+            const groqModel =
+              (typeof process !== "undefined" && (process.env?.GROQ_PRIMARY_MODEL || process.env?.GROQ_MODEL)) ||
+              "openai/gpt-oss-120b";
+            const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${groqApiKey}`,
+                "Content-Type": "application/json",
+              },
             body: JSON.stringify({
-              model: "llama-3.3-70b-versatile",
+              model: groqModel,
               temperature: 0.1,
               messages: [
                 {
@@ -120,6 +131,10 @@ TONE & NARRATIVE INSTRUCTIONS:
 
 CHART GENERATION INSTRUCTIONS:
 If the user asks to create, plot, draw, or visualize a graph or chart (or clicks "Plot this"), YOU MUST GENERATE A VALID RECHARTS JSON SPEC IN A MARKDOWN CODE BLOCK AS FOLLOWS:
+
+CHART SELECTION RULES:
+1. FOR COMPARING AVERAGES OR METRICS ACROSS GROUPS/CATEGORIES (e.g. Gestational Days by Maternal Smoker status): ALWAYS use "type": "bar" or "column". NEVER use "pie" for continuous numerical values!
+2. "pie" CHARTS ARE STRICTLY FOR CATEGORICAL PERCENTAGES / COUNTS (e.g. 70% Non-Smokers vs 30% Smokers).
 
 Standard 1 or 2 Column Charts:
 \`\`\`chart
@@ -182,6 +197,7 @@ Do NOT just write text describing a chart without outputting the \`\`\`chart ...
         } catch (groqErr) {
           console.error("Groq edge fallback error:", groqErr);
         }
+      }
 
         return new Response(
           JSON.stringify({
