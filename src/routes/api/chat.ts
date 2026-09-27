@@ -6,6 +6,7 @@ type ChatRequestBody = {
   datasetContext?: string | null;
   selectionCSV?: string | null;
   selectionLabel?: string | null;
+  rawCSV?: string | null;
 };
 
 function truncateCSVForLLM(csvString?: string | null, maxRows = 40, maxChars = 3500): string {
@@ -54,6 +55,7 @@ export const Route = createFileRoute("/api/chat")({
           datasetContext: safeDatasetContext,
           selectionCSV: safeSelectionCSV,
           selectionLabel: body.selectionLabel || "",
+          rawCSV: body.rawCSV || undefined,
         };
 
         // Determine Python Backend URL

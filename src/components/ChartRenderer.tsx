@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -111,8 +111,6 @@ export function ImageRenderer({ alt, src }: { alt: string; src: string }) {
 }
 
 export function ChartRenderer({ spec }: { spec: ChartSpec }) {
-  const [activeType, setActiveType] = useState<ChartSpec["type"]>(spec.type || "bar");
-
   // Normalize data and compute resolution mapping
   const { data, xKey, yKeys, categoryKey, isCategoryDiscrete } = useMemo(() => {
     const rawData = Array.isArray(spec.data) ? spec.data : [];
@@ -208,6 +206,26 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
       isCategoryDiscrete: isDiscrete,
     };
   }, [spec]);
+
+  const defaultChartType = useMemo(() => {
+    const rawType = spec.type || "bar";
+    if (
+      rawType === "pie" &&
+      yKeys.length > 0 &&
+      yKeys[0] !== "Count" &&
+      !yKeys[0].toLowerCase().includes("count") &&
+      !yKeys[0].toLowerCase().includes("percent")
+    ) {
+      return "bar";
+    }
+    return rawType;
+  }, [spec.type, yKeys]);
+
+  const [activeType, setActiveType] = useState<ChartSpec["type"]>(defaultChartType);
+
+  useEffect(() => {
+    setActiveType(defaultChartType);
+  }, [defaultChartType]);
 
   if (!spec || data.length === 0) {
     return (
@@ -384,17 +402,19 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
   };
 
   return (
-    <div className="my-4 bg-ink/90 border border-gold/30 rounded-xl p-4 shadow-2xl space-y-3">
-      <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
-        <div>
+    <div className="my-4 bg-ink/90 border border-gold/30 rounded-xl p-3.5 sm:p-4 shadow-2xl space-y-3 overflow-hidden">
+      <div className="flex flex-col gap-2 border-b border-border/40 pb-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1">
           {spec.title && (
-            <p className="font-display text-base text-gold-soft leading-tight">{spec.title}</p>
+            <p className="font-display text-sm sm:text-base text-gold-soft leading-tight truncate" title={spec.title}>
+              {spec.title}
+            </p>
           )}
           {spec.caption && (
-            <p className="text-[10px] text-muted-foreground italic">{spec.caption}</p>
+            <p className="text-[10px] text-muted-foreground italic truncate">{spec.caption}</p>
           )}
         </div>
-        <div className="flex items-center gap-1 bg-card/60 p-1 rounded-lg border border-border/50">
+        <div className="flex items-center gap-1 bg-card/60 p-1 rounded-lg border border-border/50 shrink-0 self-start sm:self-auto">
           {(["bar", "line", "area", "scatter", "pie"] as const).map((t) => (
             <button
               key={t}

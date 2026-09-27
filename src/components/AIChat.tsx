@@ -16,6 +16,7 @@ interface AIChatProps {
   datasetContext?: string;
   selectionCSV?: string;
   selectionLabel?: string | null;
+  rawCSV?: string;
   pendingPrompt?: string | null;
   onPromptConsumed?: () => void;
   sessionId?: string | null;
@@ -32,6 +33,7 @@ export const AIChat = ({
   datasetContext,
   selectionCSV,
   selectionLabel,
+  rawCSV,
   pendingPrompt,
   onPromptConsumed,
   sessionId,
@@ -56,10 +58,10 @@ export const AIChat = ({
   const activeSelectionCSV = hasRealSelection ? selectionCSV : undefined;
   const activeSelectionLabel = hasRealSelection ? selectionLabel : undefined;
 
-  const liveContext = useRef({ datasetContext, activeSelectionCSV, activeSelectionLabel });
+  const liveContext = useRef({ datasetContext, activeSelectionCSV, activeSelectionLabel, rawCSV });
   useEffect(() => {
-    liveContext.current = { datasetContext, activeSelectionCSV, activeSelectionLabel };
-  }, [datasetContext, activeSelectionCSV, activeSelectionLabel]);
+    liveContext.current = { datasetContext, activeSelectionCSV, activeSelectionLabel, rawCSV };
+  }, [datasetContext, activeSelectionCSV, activeSelectionLabel, rawCSV]);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
@@ -86,6 +88,7 @@ export const AIChat = ({
         datasetContext: liveContext.current.datasetContext,
         selectionCSV: liveContext.current.activeSelectionCSV,
         selectionLabel: liveContext.current.activeSelectionLabel,
+        rawCSV: liveContext.current.rawCSV,
       };
 
       const res = await fetch("/api/chat", {

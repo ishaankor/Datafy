@@ -303,6 +303,7 @@ function Workspace() {
               datasetContext={datasetContext}
               selectionCSV={selCSV}
               selectionLabel={selLabel}
+              rawCSV={csv || undefined}
               pendingPrompt={pendingPrompt}
               onPromptConsumed={() => setPendingPrompt(null)}
               sessionId={activeSessionId}
