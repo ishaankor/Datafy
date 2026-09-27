@@ -10,9 +10,21 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // @cloudflare/vite-plugin builds from this — wrangler.jsonc main alone is insufficient.
 const githubRepoName = process.env.GITHUB_REPOSITORY?.split("/")[1];
 
+const defaultSupabaseUrl = "https://ihzqkqwodhvvetydwivi.supabase.co";
+const defaultSupabaseAnonKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloenFrcXdvZGh2dmV0eWR3aXZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MzUxNzUsImV4cCI6MjEwMTExMTE3NX0.TyET-fgLyjt2PonmMmsrT7exaKA97WjRUzFRmJBseoY";
+
 export default defineConfig({
   vite: {
     base: githubRepoName ? `/${githubRepoName}/` : "/",
+    define: {
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
+        process.env.VITE_SUPABASE_URL || defaultSupabaseUrl
+      ),
+      "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(
+        process.env.VITE_SUPABASE_ANON_KEY || defaultSupabaseAnonKey
+      ),
+    },
   },
   tanstackStart: {
     router: {

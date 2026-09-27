@@ -1,15 +1,29 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
+// Default project credentials for Datafy production
+// (Anon key is public and client-safe under Supabase Row-Level Security)
+const DEFAULT_SUPABASE_URL = "https://ihzqkqwodhvvetydwivi.supabase.co";
+const DEFAULT_SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloenFrcXdvZGh2dmV0eWR3aXZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MzUxNzUsImV4cCI6MjEwMTExMTE3NX0.TyET-fgLyjt2PonmMmsrT7exaKA97WjRUzFRmJBseoY";
+
 const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL ||
-  (typeof process !== "undefined" && process.env?.VITE_SUPABASE_URL) ||
-  "";
+  (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_URL.trim() !== ""
+    ? import.meta.env.VITE_SUPABASE_URL
+    : null) ||
+  (typeof process !== "undefined" && process.env?.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_URL.trim() !== ""
+    ? process.env.VITE_SUPABASE_URL
+    : null) ||
+  DEFAULT_SUPABASE_URL;
 
 const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  (typeof process !== "undefined" && process.env?.VITE_SUPABASE_ANON_KEY) ||
-  "";
+  (import.meta.env.VITE_SUPABASE_ANON_KEY && import.meta.env.VITE_SUPABASE_ANON_KEY.trim() !== ""
+    ? import.meta.env.VITE_SUPABASE_ANON_KEY
+    : null) ||
+  (typeof process !== "undefined" && process.env?.VITE_SUPABASE_ANON_KEY && process.env.VITE_SUPABASE_ANON_KEY.trim() !== ""
+    ? process.env.VITE_SUPABASE_ANON_KEY
+    : null) ||
+  DEFAULT_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 

@@ -5,7 +5,12 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "dist/server/server.js",
   "assets": {
-    "directory": "dist/client",
+    "directory": "dist/client"
+  },
+  "vars": {
+    "VITE_SUPABASE_URL": "https://ihzqkqwodhvvetydwivi.supabase.co",
+    "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloenFrcXdvZGh2dmV0eWR3aXZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MzUxNzUsImV4cCI6MjEwMTExMTE3NX0.TyET-fgLyjt2PonmMmsrT7exaKA97WjRUzFRmJBseoY",
+    "PYTHON_BACKEND_URL": "https://datafy-brain.onrender.com/chat"
   },
   "observability": {
     "logs": {
