@@ -27,6 +27,41 @@ interface AIChatProps {
 
 import ReactMarkdown from "react-markdown";
 
+const ChatImage = ({ src, alt }: { src?: string; alt?: string }) => {
+  const [hasError, setHasError] = useState(false);
+  if (!src || hasError) return null;
+  // Strictly only render valid base64 data URIs or http/https URLs (ignore relative paths like "chart.png")
+  if (!src.startsWith("data:image/") && !src.startsWith("http://") && !src.startsWith("https://")) {
+    return null;
+  }
+  return (
+    <div className="my-3 rounded-lg overflow-hidden border border-gold/30 bg-ink/90 p-2 shadow-2xl space-y-2">
+      <div className="relative group">
+        <img
+          src={src}
+          alt={alt || "Python Matplotlib / Seaborn Chart"}
+          onError={() => setHasError(true)}
+          className="w-full h-auto rounded object-contain max-h-[500px] border border-border/40"
+        />
+        {src && (
+          <a
+            href={src}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-gold text-foreground hover:text-ink px-2.5 py-1 rounded text-[10px] font-mono font-medium shadow"
+          >
+            🔍 View Full Resolution
+          </a>
+        )}
+      </div>
+      <div className="flex items-center justify-between text-[10px] text-gold/80 font-mono px-1">
+        <span>📊 Python Seaborn / Matplotlib Graphic</span>
+        <span>dpi=150</span>
+      </div>
+    </div>
+  );
+};
+
 export const AIChat = ({
   open,
   onClose,
@@ -83,8 +118,10 @@ export const AIChat = ({
   const fetchAssistantReply = async (history: Message[]) => {
     setIsLoading(true);
     try {
+      // Only send the active user prompt to eliminate token bloat and prevent 429 rate limits
+      const lastUserMsg = [...history].reverse().find((m) => m.role === "user");
       const payload = {
-        messages: history.map((m) => ({ role: m.role, content: m.content })),
+        messages: lastUserMsg ? [{ role: "user", content: lastUserMsg.content }] : [],
         datasetContext: liveContext.current.datasetContext,
         selectionCSV: liveContext.current.activeSelectionCSV,
         selectionLabel: liveContext.current.activeSelectionLabel,
@@ -189,13 +226,25 @@ export const AIChat = ({
           <p className="eyebrow text-[0.6rem]">Sidekick</p>
           <p className="font-display text-xl mt-0.5">Let's look at this together</p>
         </div>
-        <button
-          onClick={onClose}
-          className="text-muted-foreground hover:text-gold transition"
-          aria-label="Close"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {messages.length > 0 && (
+            <button
+              onClick={() => setMessages([])}
+              className="text-muted-foreground hover:text-gold p-1 transition rounded text-[11px] font-mono flex items-center gap-1 cursor-pointer"
+              title="Reset conversation and start fresh"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Reset</span>
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-gold transition cursor-pointer"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
@@ -326,31 +375,7 @@ export const AIChat = ({
                                   {children}
                                 </code>
                               ),
-                              img: ({ src, alt }) => (
-                                <div className="my-3 rounded-lg overflow-hidden border border-gold/30 bg-ink/90 p-2 shadow-2xl space-y-2">
-                                  <div className="relative group">
-                                    <img
-                                      src={src}
-                                      alt={alt || "Python Matplotlib / Seaborn Chart"}
-                                      className="w-full h-auto rounded object-contain max-h-[500px] border border-border/40"
-                                    />
-                                    {src && (
-                                      <a
-                                        href={src}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-gold text-foreground hover:text-ink px-2.5 py-1 rounded text-[10px] font-mono font-medium shadow"
-                                      >
-                                        🔍 View Full Resolution
-                                      </a>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center justify-between text-[10px] text-gold/80 font-mono px-1">
-                                    <span>📊 Python Seaborn / Matplotlib Graphic</span>
-                                    <span>dpi=150</span>
-                                  </div>
-                                </div>
-                              ),
+                              img: ChatImage,
                             }}
                           >
                             {seg.text}

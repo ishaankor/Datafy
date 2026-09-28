@@ -45,13 +45,13 @@ export const Route = createFileRoute("/api/chat")({
 
         const safeSelectionCSV = truncateCSVForLLM(body.selectionCSV);
         const safeDatasetContext = truncateCSVForLLM(body.datasetContext);
-        const recentMessages = body.messages.slice(-6);
+        // Only forward the active user prompt to conserve input token limits and prevent Groq 429 errors
+        const activeUserQuery =
+          [...body.messages].reverse().find((m) => m.role === "user")?.content || "";
+        const cleanUserQuery = typeof activeUserQuery === "string" ? stripBase64Images(activeUserQuery) : "";
 
         const pythonPayload = {
-          messages: recentMessages.map((m) => ({
-            role: m.role === "assistant" ? "assistant" : "user",
-            content: typeof m.content === "string" ? stripBase64Images(m.content) : "",
-          })),
+          messages: [{ role: "user", content: cleanUserQuery }],
           datasetContext: safeDatasetContext,
           selectionCSV: safeSelectionCSV,
           selectionLabel: body.selectionLabel || "",
