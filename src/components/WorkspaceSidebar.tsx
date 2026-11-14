@@ -247,7 +247,7 @@ export function WorkspaceSidebar({
             </div>
             <div className="truncate text-left">
               <p className="text-xs font-medium text-foreground truncate">{user.email}</p>
-              <p className="text-[9px] text-muted-foreground font-mono">Pro Curator</p>
+              <p className="text-[9px] text-muted-foreground font-mono">Workspace</p>
             </div>
           </div>
         ) : (

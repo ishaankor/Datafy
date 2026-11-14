@@ -229,8 +229,8 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
 
   if (!spec || data.length === 0) {
     return (
-      <div className="my-2 p-3 rounded bg-card/60 border border-border text-muted-foreground font-mono text-xs text-center">
-        📊 No valid chart data points available for this selection.
+      <div className="my-2 p-3 rounded-sm bg-card/60 border border-border text-muted-foreground font-mono text-xs text-center">
+        No chart data points available for this selection.
       </div>
     );
   }
@@ -402,7 +402,7 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
   };
 
   return (
-    <div className="my-4 bg-ink/90 border border-gold/30 rounded-xl p-3.5 sm:p-4 shadow-2xl space-y-3 overflow-hidden">
+    <div className="my-4 bg-ink/90 border border-border rounded-sm p-3.5 sm:p-4 shadow-xl space-y-3 overflow-hidden">
       <div className="flex flex-col gap-2 border-b border-border/40 pb-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
           {spec.title && (
@@ -414,14 +414,14 @@ export function ChartRenderer({ spec }: { spec: ChartSpec }) {
             <p className="text-[10px] text-muted-foreground italic truncate">{spec.caption}</p>
           )}
         </div>
-        <div className="flex items-center gap-1 bg-card/60 p-1 rounded-lg border border-border/50 shrink-0 self-start sm:self-auto">
+        <div className="flex items-center gap-1 bg-card/60 p-1 rounded-sm border border-border/50 shrink-0 self-start sm:self-auto">
           {(["bar", "line", "area", "scatter", "pie"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setActiveType(t)}
-              className={`px-2 py-0.5 rounded text-[10px] font-mono capitalize transition ${
+              className={`px-2 py-0.5 rounded-xs text-[10px] font-mono capitalize transition cursor-pointer ${
                 activeType === t || (activeType === "multivariate" && t === "scatter")
-                  ? "bg-gold text-ink font-bold shadow"
+                  ? "bg-gold text-ink font-medium"
                   : "text-muted-foreground hover:text-gold"
               }`}
             >

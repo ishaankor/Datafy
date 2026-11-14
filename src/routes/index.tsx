@@ -1,20 +1,15 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
-import { HomeDemo } from "@/components/HomeDemo";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { HomeDemo, PRESET_DATASETS, type DemoDataset } from "@/components/HomeDemo";
 import { HomeGuidedTour } from "@/components/HomeGuidedTour";
 import {
-  Sparkles,
   ArrowRight,
-  Database,
-  Shield,
-  Zap,
   BarChart3,
-  MessageCircle,
+  MessageSquare,
   FileSpreadsheet,
-  CheckCircle2,
   MousePointerClick,
-  Layers,
-  Lock,
+  BookOpen,
+  History,
+  Upload,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -22,205 +17,212 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const navigate = useNavigate();
+
+  const handleQuickEnterDataset = (ds: DemoDataset) => {
+    try {
+      sessionStorage.setItem("datafy_demo_csv", ds.csv);
+      sessionStorage.setItem("datafy_demo_name", ds.name);
+    } catch {
+      // ignore
+    }
+    navigate({ to: "/workspace" });
+  };
+
   return (
-    <main className="min-h-screen bg-background text-foreground animate-fade-in space-y-16 pb-20">
-      {/* 1. HERO SECTION */}
-      <section className="relative pt-20 pb-16 px-6 max-w-7xl mx-auto text-center space-y-8">
-        {/* TOP BADGE */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gold/10 border border-gold/30 text-gold text-xs font-mono tracking-wide shadow-sm animate-pulse">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Vol. I — Editorial AI Data Workspace</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-        </div>
+    <main className="editorial-page">
+      {/* 1. HERO ENTRANCE SECTION */}
+      <section className="hero-entrance" aria-labelledby="hero-title">
+        <div className="hero-spotlight" aria-hidden="true" />
 
-        {/* HEADLINE */}
-        <div className="space-y-4 max-w-4xl mx-auto">
-          <h1 className="font-display text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-foreground leading-[1.08]">
-            Turn raw data into an{" "}
-            <span className="text-gold italic font-serif block sm:inline">
-              editorial canvas.
-            </span>
-          </h1>
-          <p className="text-muted-foreground text-base sm:text-2xl max-w-2xl mx-auto leading-relaxed font-serif pt-2">
-            Upload CSVs, explore interactive grids, render live charts, and research your dataset
-            alongside an inline AI Curator Sidekick.
-          </p>
-        </div>
+        <div className="hero-stage">
+          {/* EDITORIAL MASTHEAD BAR */}
+          <header className="masthead-bar">
+            <div className="masthead-vol">
+              <span className="masthead-rule" aria-hidden="true" />
+              <p className="eyebrow">Interactive Data Canvas</p>
+              <span className="masthead-rule" aria-hidden="true" />
+            </div>
+          </header>
 
-        {/* HERO CTA BUTTONS */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-          <Link to="/workspace">
-            <Button
-              size="lg"
-              className="bg-gold hover:bg-gold-soft text-ink font-semibold px-8 py-6 text-sm rounded-md shadow-lg shadow-gold/20 hover:scale-[1.02] transition-all w-full sm:w-auto"
-            >
-              <Sparkles className="w-4 h-4 mr-2" /> Launch Workspace{" "}
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
+          {/* HEADLINE & ORNAMENT */}
+          <div className="hero-frontispiece">
+            <h1 id="hero-title" className="hero-headline">
+              Turn raw tables into an <em>editorial canvas.</em>
+            </h1>
 
-          <a href="#demo">
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-border text-foreground hover:text-gold hover:border-gold/50 px-6 py-6 text-sm rounded-md w-full sm:w-auto font-mono"
-            >
-              Explore Live Demo ↓
-            </Button>
-          </a>
-        </div>
+            <div className="hero-ornament" aria-hidden="true">
+              <span className="hero-diamond" />
+            </div>
 
-        {/* PERFORMANCE METRICS TICKER */}
-        <div className="pt-10 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-center">
-          <div className="p-4 rounded-xl bg-card/30 border border-border/50 backdrop-blur-xs hover:border-gold/40 transition-colors">
-            <p className="font-display text-3xl font-bold text-gold">0ms</p>
-            <p className="text-[11px] text-muted-foreground font-mono mt-1">Client Cold-Start</p>
+            <p className="hero-summary">
+              Drop in a CSV, highlight the rows or columns that matter, plot distributions, and
+              interrogate your dataset alongside a context-aware analyst.
+            </p>
           </div>
-          <div className="p-4 rounded-xl bg-card/30 border border-border/50 backdrop-blur-xs hover:border-gold/40 transition-colors">
-            <p className="font-display text-3xl font-bold text-gold">100%</p>
-            <p className="text-[11px] text-muted-foreground font-mono mt-1">Postgres RLS Private</p>
+
+          {/* PRIMARY THRESHOLD CTAS */}
+          <div className="hero-actions">
+            <Link to="/workspace" className="btn-editorial btn-editorial--lg">
+              <span>Enter Workspace</span>
+              <ArrowRight size={14} aria-hidden="true" />
+            </Link>
+
+            <a href="#demo" className="btn-secondary-editorial">
+              Try Sandbox Below ↓
+            </a>
           </div>
-          <div className="p-4 rounded-xl bg-card/30 border border-border/50 backdrop-blur-xs hover:border-gold/40 transition-colors">
-            <p className="font-display text-3xl font-bold text-gold">Instant</p>
-            <p className="text-[11px] text-muted-foreground font-mono mt-1">CSV & Recharts Engine</p>
-          </div>
-          <div className="p-4 rounded-xl bg-card/30 border border-border/50 backdrop-blur-xs hover:border-gold/40 transition-colors">
-            <p className="font-display text-3xl font-bold text-gold">AI</p>
-            <p className="text-[11px] text-muted-foreground font-mono mt-1">Curator Sidekick</p>
-          </div>
+
+          {/* DIRECT DATASET ENTRY THRESHOLD */}
+          <nav className="dataset-threshold" aria-label="Sample datasets">
+            <span className="dataset-threshold__label">Or open directly with:</span>
+            {PRESET_DATASETS.map((ds) => (
+              <button
+                key={ds.id}
+                type="button"
+                onClick={() => handleQuickEnterDataset(ds)}
+                className="dataset-chip"
+              >
+                {ds.name} ↗
+              </button>
+            ))}
+            <Link to="/workspace" className="dataset-chip dataset-chip--dashed">
+              <Upload size={12} aria-hidden="true" />
+              <span>Your CSV</span>
+            </Link>
+          </nav>
+
+          {/* VERTICAL LEAD-IN STEM */}
+          <div className="hero-stem" aria-hidden="true" />
+
+          {/* EDITORIAL SPEC LEDGER */}
+          <dl className="spec-ledger" aria-label="Platform specifications">
+            <div>
+              <span className="eyebrow">01 / Ingest</span>
+              <dt>Direct CSV &amp; TSV</dt>
+              <dd>Parsed locally with automatic schema and type detection.</dd>
+            </div>
+            <div>
+              <span className="eyebrow">02 / Context</span>
+              <dt>Spatial Selection</dt>
+              <dd>Isolate specific cells, rows, or columns before querying.</dd>
+            </div>
+            <div>
+              <span className="eyebrow">03 / Graphics</span>
+              <dt>Inline Plotting</dt>
+              <dd>Bar, line, area, scatter, and distribution charts on demand.</dd>
+            </div>
+            <div>
+              <span className="eyebrow">04 / Continuity</span>
+              <dt>Saved Sessions</dt>
+              <dd>Datasets and analysis threads persist across visits.</dd>
+            </div>
+          </dl>
         </div>
       </section>
-
-      {/* HAIRLINE DIVIDER */}
-      <div className="hairline max-w-5xl mx-auto" />
 
       {/* 2. INTERACTIVE LIVE DEMO SHOWCASE */}
-      <section className="px-6 max-w-7xl mx-auto">
-        <HomeDemo />
-      </section>
+      <HomeDemo />
 
-      {/* HAIRLINE DIVIDER */}
-      <div className="hairline max-w-5xl mx-auto" />
+      <div className="hairline" style={{ maxWidth: "64rem", margin: "3rem auto" }} role="separator" />
 
       {/* 3. STEP-BY-STEP GUIDED TOUR */}
       <HomeGuidedTour />
 
-      {/* HAIRLINE DIVIDER */}
-      <div className="hairline max-w-5xl mx-auto" />
+      <div className="hairline" style={{ maxWidth: "64rem", margin: "3rem auto" }} role="separator" />
 
-      {/* 4. FEATURES MATRIX GRID */}
-      <section className="py-16 px-6 max-w-7xl mx-auto space-y-12">
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/30 text-gold text-xs font-mono tracking-wide">
-            <Layers className="w-3.5 h-3.5" />
-            <span>Capability Suite</span>
-          </div>
-          <h2 className="font-display text-4xl font-bold">Built for Rigorous Research</h2>
-          <p className="text-xs text-muted-foreground max-w-lg mx-auto font-serif">
-            Everything you need to parse, visualize, and persist data sessions seamlessly.
+      {/* 4. CAPABILITIES GRID */}
+      <section className="editorial-section" aria-labelledby="capabilities-heading">
+        <header className="section-heading">
+          <p className="eyebrow">Capabilities</p>
+          <h2 id="capabilities-heading">Built for close reading of data</h2>
+          <p>
+            Tools designed to keep raw numbers, visual plots, and written interpretation in the same
+            frame.
           </p>
-        </div>
+        </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="p-6 rounded-xl bg-card/30 border border-border/80 space-y-4 hover:border-gold/50 transition-all group">
-            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
-              <FileSpreadsheet className="w-5 h-5" />
+        <div className="capabilities-grid">
+          <article className="capability-card">
+            <div className="capability-icon" aria-hidden="true">
+              <FileSpreadsheet size={16} />
             </div>
-            <h3 className="font-display text-xl font-semibold">Instant CSV Ingestion</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Drag and drop any raw `.csv` file or paste tab-delimited text. Auto-detects schema,
-              data types, row counts, and numerical columns instantly.
+            <h3>Local CSV Ingestion</h3>
+            <p>
+              Drop a <code>.csv</code> file or paste tabular text. Headers, numeric columns, and
+              summary counts are inferred immediately in the browser.
             </p>
-          </div>
+          </article>
 
-          <div className="p-6 rounded-xl bg-card/30 border border-border/80 space-y-4 hover:border-gold/50 transition-all group">
-            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
-              <MousePointerClick className="w-5 h-5" />
+          <article className="capability-card">
+            <div className="capability-icon" aria-hidden="true">
+              <MousePointerClick size={16} />
             </div>
-            <h3 className="font-display text-xl font-semibold">Spatial Context Selection</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Click individual cells, rows, or columns to isolate context. Datafy builds focused spatial
-              payloads so AI responses pinpoint exact metrics without hallucination.
+            <h3>Spatial Context Selection</h3>
+            <p>
+              Drag across cells or click row and column headers to scope your question. Instant
+              aggregates (count, sum, mean, min, max) appear in the toolbar as you select.
             </p>
-          </div>
+          </article>
 
-          <div className="p-6 rounded-xl bg-card/30 border border-border/80 space-y-4 hover:border-gold/50 transition-all group">
-            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
-              <BarChart3 className="w-5 h-5" />
+          <article className="capability-card">
+            <div className="capability-icon" aria-hidden="true">
+              <BarChart3 size={16} />
             </div>
-            <h3 className="font-display text-xl font-semibold">Dynamic Recharts Graphics</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Render interactive Bar, Line, Area, and Pie charts directly from table selections or
-              AI prompt commands with full SVG tooltip interactivity.
+            <h3>Interactive Charts</h3>
+            <p>
+              Generate bar, line, area, scatter, and pie charts directly from a table selection or
+              ask the sidekick to plot a comparison for you.
             </p>
-          </div>
+          </article>
 
-          <div className="p-6 rounded-xl bg-card/30 border border-border/80 space-y-4 hover:border-gold/50 transition-all group">
-            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
-              <MessageCircle className="w-5 h-5" />
+          <article className="capability-card">
+            <div className="capability-icon" aria-hidden="true">
+              <MessageSquare size={16} />
             </div>
-            <h3 className="font-display text-xl font-semibold">AI Curator Sidekick</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Ask questions in natural language. Receive formatted markdown summaries, statistical
-              explanations, formula verification, and recommended next steps.
+            <h3>Inline Analyst Sidekick</h3>
+            <p>
+              Ask questions in plain language alongside your grid. Receive structured breakdowns,
+              outlier checks, and embedded charts without leaving the table.
             </p>
-          </div>
+          </article>
 
-          <div className="p-6 rounded-xl bg-card/30 border border-border/80 space-y-4 hover:border-gold/50 transition-all group">
-            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
-              <Lock className="w-5 h-5" />
+          <article className="capability-card">
+            <div className="capability-icon" aria-hidden="true">
+              <History size={16} />
             </div>
-            <h3 className="font-display text-xl font-semibold">Supabase RLS Persistence</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Sign in to save your datasets, chat threads, and visualizations safely to your personal
-              cloud account powered by PostgreSQL Row Level Security.
+            <h3>Persistent Workspaces</h3>
+            <p>
+              Sign in to keep your uploaded datasets and conversation threads organized in a
+              session history sidebar you can return to anytime.
             </p>
-          </div>
+          </article>
 
-          <div className="p-6 rounded-xl bg-card/30 border border-border/80 space-y-4 hover:border-gold/50 transition-all group">
-            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
-              <Sparkles className="w-5 h-5" />
+          <article className="capability-card">
+            <div className="capability-icon" aria-hidden="true">
+              <BookOpen size={16} />
             </div>
-            <h3 className="font-display text-xl font-semibold">Editorial Noir Aesthetics</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Crafted with Cormorant Garamond typography, gold foil accents, dark museum contrast,
-              and micro-animations for an executive-grade experience.
+            <h3>Legible by Default</h3>
+            <p>
+              High-contrast dark surfaces, tabular numerals, and clear typographic hierarchy keep
+              long analysis sessions calm on the eyes.
             </p>
-          </div>
+          </article>
         </div>
       </section>
 
       {/* 5. FINAL CALL TO ACTION BANNER */}
-      <section className="py-12 px-6 max-w-5xl mx-auto">
-        <div className="p-10 sm:p-14 rounded-3xl bg-gradient-to-r from-card via-background to-card border border-gold/40 text-center space-y-6 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-gold to-transparent opacity-80" />
-
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 text-gold text-xs font-mono">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Ready to Begin</span>
-          </div>
-
-          <h2 className="font-display text-4xl sm:text-5xl font-bold tracking-tight text-foreground">
-            Experience the Editorial Data Workspace
-          </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed font-serif">
-            No configuration required. Launch the workspace and start exploring your data in
-            seconds.
-          </p>
-
-          <div className="flex justify-center gap-3 pt-2">
-            <Link to="/workspace">
-              <Button
-                size="lg"
-                className="bg-gold hover:bg-gold-soft text-ink font-semibold px-8 text-sm rounded-md shadow-lg shadow-gold/20 hover:scale-[1.02] transition-all"
-              >
-                <Sparkles className="w-4 h-4 mr-2" /> Launch Free Workspace{" "}
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-          </div>
+      <aside className="cta-panel" aria-labelledby="cta-heading">
+        <div className="cta-panel__box">
+          <p className="eyebrow">Get Started</p>
+          <h2 id="cta-heading">Bring your own dataset to the canvas.</h2>
+          <p>Open the workspace to upload a CSV file, highlight ranges, and start exploring.</p>
+          <Link to="/workspace" className="btn-editorial btn-editorial--lg">
+            <span>Open Workspace</span>
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
         </div>
-      </section>
+      </aside>
     </main>
   );
 }

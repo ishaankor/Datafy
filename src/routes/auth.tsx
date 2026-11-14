@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { toast } from "sonner";
-import { LogIn, UserPlus, Sparkles, KeyRound, AlertTriangle, ArrowLeft } from "lucide-react";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/auth")({
@@ -74,21 +74,21 @@ function AuthPage() {
           </Link>
         </div>
 
-        <div className="p-8 rounded-2xl bg-card/60 border border-border shadow-2xl space-y-6">
+        <div className="p-8 rounded-md bg-card/50 border border-border shadow-xl space-y-6">
           <div className="text-center space-y-1">
-            <span className="font-display text-3xl font-bold tracking-tight text-foreground">
+            <span className="font-display text-3xl font-medium tracking-tight text-foreground">
               Datafy<span className="text-gold">.</span>
             </span>
-            <h2 className="text-lg font-semibold text-foreground pt-2">
-              {tab === "signin" ? "Sign in to your account" : "Create a new curator account"}
+            <h2 className="text-base font-medium text-foreground pt-2">
+              {tab === "signin" ? "Sign in to your account" : "Create an account"}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Access your saved datasets, AI sidekick sessions, and custom visualizations.
+              Access your saved datasets and workspace sessions.
             </p>
           </div>
 
           {!isSupabaseConfigured && (
-            <div className="p-3 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2.5">
+            <div className="p-3 rounded-sm bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2.5">
               <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
               <div>
                 <span className="font-semibold block mb-0.5">Supabase Config Missing</span>
@@ -102,18 +102,18 @@ function AuthPage() {
             onValueChange={(v) => setTab(v as "signin" | "signup")}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2 bg-secondary">
+            <TabsList className="grid w-full grid-cols-2 bg-secondary rounded-sm">
               <TabsTrigger
                 value="signin"
-                className="text-xs data-[state=active]:bg-background data-[state=active]:text-foreground"
+                className="text-xs rounded-xs data-[state=active]:bg-background data-[state=active]:text-foreground"
               >
-                <LogIn className="w-3.5 h-3.5 mr-1.5" /> Sign In
+                Sign In
               </TabsTrigger>
               <TabsTrigger
                 value="signup"
-                className="text-xs data-[state=active]:bg-background data-[state=active]:text-foreground"
+                className="text-xs rounded-xs data-[state=active]:bg-background data-[state=active]:text-foreground"
               >
-                <UserPlus className="w-3.5 h-3.5 mr-1.5" /> Sign Up
+                Sign Up
               </TabsTrigger>
             </TabsList>
 
@@ -125,11 +125,11 @@ function AuthPage() {
                 <Input
                   id="email-auth-page"
                   type="email"
-                  placeholder="researcher@datafy.ai"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="bg-secondary/50 border-border text-xs"
+                  className="bg-secondary/50 border-border text-xs rounded-sm"
                 />
               </div>
 
@@ -145,26 +145,20 @@ function AuthPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="bg-secondary/50 border-border text-xs"
+                  className="bg-secondary/50 border-border text-xs rounded-sm"
                 />
               </div>
 
               <Button
                 type="submit"
                 disabled={loading || !isSupabaseConfigured}
-                className="w-full bg-gold hover:bg-gold-soft text-ink text-xs font-medium rounded-sm py-2 mt-2 transition-all"
+                className="w-full bg-gold hover:bg-gold-soft text-ink text-xs font-medium rounded-sm py-2 mt-2 transition-colors"
               >
-                {loading ? (
-                  "Authenticating..."
-                ) : tab === "signin" ? (
-                  <span className="flex items-center justify-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5" /> Sign In & Launch Workspace
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" /> Create Account & Continue
-                  </span>
-                )}
+                {loading
+                  ? "Authenticating..."
+                  : tab === "signin"
+                  ? "Sign In"
+                  : "Create Account"}
               </Button>
             </form>
           </Tabs>

@@ -92,12 +92,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Datafy! — Editorial data canvas for deep research" },
+      { title: "Datafy — Editorial data canvas" },
       {
         name: "description",
-        content: "Paste a dataset. Receive an editorial canvas. Ask the curator anything.",
+        content: "Drop in a dataset, select spatial context, and interrogate your numbers.",
       },
-      { property: "og:title", content: "Datafy! — Editorial data canvas" },
+      { property: "og:title", content: "Datafy — Editorial data canvas" },
       { property: "og:description", content: "An aesthetic, AI-curated way to explore your data." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -129,7 +129,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="bg-background text-foreground flex flex-col min-h-screen">
+      <body className="app-shell">
         {children}
         <Scripts />
       </body>
@@ -142,9 +142,9 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex flex-col min-h-screen">
+      <div className="app-shell">
         <Navbar />
-        <div className="flex-1">
+        <div className="app-main">
           <Outlet />
         </div>
         <Footer />

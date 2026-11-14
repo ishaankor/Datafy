@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { User as UserIcon, LogOut, Database, LogIn } from "lucide-react";
+import { LogOut, Database } from "lucide-react";
 
 import { Link } from "@tanstack/react-router";
 
@@ -33,14 +33,12 @@ export function UserMenu({ user, onOpenHistory }: UserMenuProps) {
 
   if (!user) {
     return (
-      <Link to="/auth">
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-border text-xs text-foreground hover:text-gold hover:border-gold/50"
-        >
-          <LogIn className="w-3.5 h-3.5 mr-1.5 text-gold" /> Sign In
-        </Button>
+      <Link
+        to="/auth"
+        className="btn-secondary-editorial"
+        style={{ padding: "0.45rem 0.95rem", fontSize: "0.75rem" }}
+      >
+        Sign In
       </Link>
     );
   }

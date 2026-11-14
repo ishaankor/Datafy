@@ -1,29 +1,20 @@
 import { useState, useMemo } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
-  Sparkles,
   ArrowRight,
   BarChart3,
   MessageCircle,
   Table as TableIcon,
-  Filter,
-  TrendingUp,
-  RefreshCw,
   Search,
   ArrowUpDown,
-  CheckCircle2,
   PieChart as PieIcon,
   LineChart as LineIcon,
   AreaChart as AreaIcon,
   BarChart2,
   FileSpreadsheet,
-  Zap,
-  Shield,
-  Layers,
   ChevronRight,
   Send,
-  Sliders,
   Copy,
   Check,
 } from "lucide-react";
@@ -400,199 +391,165 @@ export function HomeDemo() {
   };
 
   return (
-    <div id="demo" className="space-y-8 scroll-mt-20">
+    <section id="demo" className="sandbox-section" aria-labelledby="sandbox-heading">
       {/* SECTION TITLE & PRESET SWITCHER */}
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/30 text-gold text-xs font-mono tracking-wide">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Interactive Playground</span>
-        </div>
-        <h2 className="font-display text-3xl sm:text-5xl font-bold tracking-tight">
-          Test Datafy Live in Your Browser
-        </h2>
-        <p className="text-sm text-muted-foreground max-w-xl mx-auto font-serif">
-          Experience cell selections, column sorting, dynamic chart generation, and inline AI
-          curator responses without signing up.
+      <header className="section-heading">
+        <p className="eyebrow">Interactive Sandbox</p>
+        <h2 id="sandbox-heading">Explore a sample dataset in your browser</h2>
+        <p>
+          Sort columns, inspect cell statistics, switch chart views, or test sample inquiries before
+          opening the full workspace.
         </p>
 
         {/* PRESET DATASET PILLS */}
-        <div className="pt-2 flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto">
+        <div className="preset-switcher" role="group" aria-label="Sample datasets">
           {PRESET_DATASETS.map((ds) => {
             const isSelected = !isCustomMode && selectedDatasetId === ds.id;
             return (
               <button
                 key={ds.id}
+                type="button"
+                aria-pressed={isSelected}
                 onClick={() => handleSelectPreset(ds)}
-                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 border ${
-                  isSelected
-                    ? "bg-gold text-ink font-semibold border-gold shadow-md shadow-gold/20 scale-[1.02]"
-                    : "bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border-border/60"
-                }`}
+                className="preset-btn"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <FileSpreadsheet size={14} aria-hidden="true" />
                 <span>{ds.name}</span>
-                <span
-                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                    isSelected ? "bg-ink/15 text-ink" : "bg-gold/10 text-gold"
-                  }`}
-                >
-                  {ds.badge.split(" × ")[0]}
-                </span>
+                <span className="preset-btn__meta">{ds.badge.split(" × ")[0]}</span>
               </button>
             );
           })}
 
           <button
+            type="button"
+            aria-pressed={isCustomMode}
             onClick={() => {
               setIsCustomMode(true);
               setActiveTab("table");
             }}
-            className={`px-4 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 border ${
-              isCustomMode
-                ? "bg-gold text-ink font-semibold border-gold shadow-md shadow-gold/20 scale-[1.02]"
-                : "bg-card/60 text-muted-foreground hover:text-foreground hover:bg-card border-border/60"
-            }`}
+            className="preset-btn"
           >
-            <Zap className="w-3.5 h-3.5 text-gold" />
             <span>Paste Custom CSV</span>
           </button>
         </div>
-      </div>
+      </header>
 
       {/* MAIN DEMO CANVAS BOX */}
-      <div className="rounded-2xl bg-card/40 border border-gold/30 shadow-2xl backdrop-blur-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-0 border-t-2 border-t-gold">
+      <div className="sandbox-frame">
         {/* LEFT / TOP CONTROL HEADER & TABS */}
-        <div className="lg:col-span-12 bg-background/80 border-b border-border px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-          {/* DATASET METADATA BADGE */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-xs font-mono">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span className="text-foreground font-semibold">
-                {isCustomMode ? "Custom CSV Data" : activePreset.name}
-              </span>
-              <span className="text-muted-foreground">
-                ({parsedData.rows.length} Rows × {parsedData.headers.length} Cols)
-              </span>
-            </div>
+        <div className="sandbox-toolbar">
+          <div className="sandbox-breadcrumb">
+            / {isCustomMode ? "custom.csv" : activePreset.name} · {parsedData.rows.length} rows ×{" "}
+            {parsedData.headers.length} cols
           </div>
 
-          {/* VIEW TAB SWITCHER (TABLE / CHART / AI SIDEKICK) */}
-          <div className="flex items-center gap-1 bg-card p-1 rounded-lg border border-border/60">
+          {/* VIEW TAB SWITCHER */}
+          <div className="sandbox-tablist" role="tablist" aria-label="Sandbox view mode">
             <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "table"}
               onClick={() => setActiveTab("table")}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                activeTab === "table"
-                  ? "bg-gold text-ink font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className="sandbox-tab"
             >
-              <TableIcon className="w-3.5 h-3.5" /> Interactive Table
+              <TableIcon size={14} aria-hidden="true" />
+              <span>Table</span>
             </button>
             <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "chart"}
               onClick={() => setActiveTab("chart")}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                activeTab === "chart"
-                  ? "bg-gold text-ink font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className="sandbox-tab"
             >
-              <BarChart3 className="w-3.5 h-3.5" /> Recharts Visualizer
+              <BarChart3 size={14} aria-hidden="true" />
+              <span>Chart</span>
             </button>
             <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "ai"}
               onClick={() => setActiveTab("ai")}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                activeTab === "ai"
-                  ? "bg-gold text-ink font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className="sandbox-tab"
             >
-              <MessageCircle className="w-3.5 h-3.5" /> AI Curator Sidekick
+              <MessageCircle size={14} aria-hidden="true" />
+              <span>Sidekick</span>
             </button>
           </div>
 
-          {/* LAUNCH WORKSPACE ACTION */}
-          <Button
-            size="sm"
-            onClick={handleLaunchWithData}
-            className="bg-gold hover:bg-gold-soft text-ink font-medium text-xs rounded-md shadow-sm"
-          >
-            <Sparkles className="w-3.5 h-3.5 mr-1.5" /> Open Full Workspace{" "}
-            <ArrowRight className="w-3.5 h-3.5 ml-1" />
-          </Button>
+          <button type="button" onClick={handleLaunchWithData} className="btn-editorial">
+            <span>Open in Workspace</span>
+            <ArrowRight size={14} aria-hidden="true" />
+          </button>
         </div>
 
-        {/* CUSTOM CSV INPUT AREA (WHEN CUSTOM MODE ACTIVE) */}
+        {/* CUSTOM CSV INPUT AREA */}
         {isCustomMode && (
-          <div className="lg:col-span-12 p-4 bg-background/90 border-b border-border space-y-3">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-mono text-gold flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5" /> Paste Raw CSV Text Below:
-              </span>
+          <div style={{ gridColumn: "1 / -1", padding: "1rem", borderBottom: "1px solid var(--border)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", fontSize: "0.75rem" }}>
+              <label htmlFor="custom-csv-textarea" className="sandbox-breadcrumb">
+                Paste comma-separated values:
+              </label>
               <button
+                type="button"
                 onClick={() =>
                   setCustomCsvInput(
                     `Product,Q1_Sales,Q2_Sales,Satisfaction_Score\nAlpha,4500,5200,4.8\nBeta,3100,4100,4.5\nGamma,6800,7200,4.9\nDelta,1900,2400,4.2`
                   )
                 }
-                className="text-[11px] text-muted-foreground hover:text-gold underline font-mono"
+                className="dataset-chip"
               >
-                Insert Sample SaaS Dataset
+                Load sample CSV
               </button>
             </div>
             <textarea
+              id="custom-csv-textarea"
               rows={4}
               value={customCsvInput}
               onChange={(e) => setCustomCsvInput(e.target.value)}
               placeholder="Country,GDP,Growth Rate&#10;USA,26854,2.5&#10;Japan,4212,1.9"
-              className="w-full p-3 rounded-lg bg-card/60 border border-border font-mono text-xs text-foreground focus:outline-none focus:border-gold transition-colors"
+              style={{ width: "100%", padding: "0.75rem", background: "var(--surface-glass)", border: "1px solid var(--border)", fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--foreground)" }}
             />
           </div>
         )}
 
-        {/* MAIN BODY AREA (SPLIT SCREEN ON DESKTOP) */}
-        <div className="lg:col-span-7 border-r border-border p-4 space-y-4 bg-background/30 flex flex-col justify-between min-h-[460px]">
+        {/* MAIN BODY AREA */}
+        <div className="sandbox-stage">
           {/* TAB 1: INTERACTIVE TABLE */}
           {activeTab === "table" && (
-            <div className="space-y-3 flex-1 flex flex-col justify-between">
-              {/* TABLE CONTROLS BAR */}
-              <div className="flex items-center justify-between gap-3 text-xs">
-                <div className="relative flex-1 max-w-xs">
-                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+                <div style={{ position: "relative", flex: 1, maxWidth: "18rem" }}>
+                  <Search size={14} aria-hidden="true" style={{ position: "absolute", left: "0.65rem", top: "0.55rem", color: "var(--muted-foreground)" }} />
                   <input
-                    type="text"
+                    type="search"
+                    aria-label="Filter table rows"
                     placeholder="Search rows or values..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 rounded-md bg-card/70 border border-border/80 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-gold"
+                    style={{ width: "100%", padding: "0.375rem 0.75rem 0.375rem 2rem", borderRadius: "var(--radius)", background: "var(--surface-elevated)", border: "1px solid var(--border)", fontSize: "0.75rem", color: "var(--foreground)" }}
                   />
                 </div>
-                <div className="text-[11px] text-muted-foreground font-mono">
-                  Click any cell to highlight context
-                </div>
+                <span className="sandbox-breadcrumb">Click any cell to highlight context</span>
               </div>
 
-              {/* TABLE CONTAINER */}
-              <div className="overflow-x-auto rounded-lg border border-border/80 bg-background/80 flex-1">
-                <table className="w-full text-left text-xs border-collapse">
+              <div className="sandbox-table-wrap">
+                <table className="sandbox-table">
                   <thead>
-                    <tr className="border-b border-border bg-card/60 font-mono text-muted-foreground">
-                      <th className="p-2.5 text-[11px] text-center w-8">#</th>
+                    <tr>
+                      <th scope="col">#</th>
                       {parsedData.headers.map((header) => {
                         const isSorted = sortColumn === header;
                         return (
-                          <th
-                            key={header}
-                            onClick={() => toggleSort(header)}
-                            className="p-2.5 font-semibold text-foreground cursor-pointer hover:bg-card/80 transition-colors whitespace-nowrap"
-                          >
-                            <div className="flex items-center gap-1.5">
+                          <th key={header} scope="col" onClick={() => toggleSort(header)}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
                               <span>{header}</span>
                               <ArrowUpDown
-                                className={`w-3 h-3 ${
-                                  isSorted ? "text-gold" : "text-muted-foreground/50"
-                                }`}
+                                size={12}
+                                aria-hidden="true"
+                                style={{ color: isSorted ? "var(--gold)" : "var(--muted-foreground)" }}
                               />
-                            </div>
+                            </span>
                           </th>
                         );
                       })}
@@ -604,16 +561,10 @@ export function HomeDemo() {
                       return (
                         <tr
                           key={rIdx}
+                          data-selected={isRowSelected}
                           onClick={() => setSelectedRowIndex(rIdx)}
-                          className={`border-b border-border/40 transition-colors cursor-pointer ${
-                            isRowSelected
-                              ? "bg-gold/10 text-foreground font-medium"
-                              : "hover:bg-card/40 text-foreground/90"
-                          }`}
                         >
-                          <td className="p-2.5 text-[10px] font-mono text-muted-foreground text-center">
-                            {rIdx + 1}
-                          </td>
+                          <td>{rIdx + 1}</td>
                           {parsedData.headers.map((header) => {
                             const val = row[header];
                             const isCellSelected =
@@ -621,20 +572,14 @@ export function HomeDemo() {
                             return (
                               <td
                                 key={header}
+                                data-cell-active={isCellSelected}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedRowIndex(rIdx);
                                   setSelectedCell({ row: rIdx, col: header });
                                 }}
-                                className={`p-2.5 font-mono whitespace-nowrap transition-colors ${
-                                  isCellSelected
-                                    ? "bg-gold/30 text-gold font-bold ring-1 ring-gold rounded-xs"
-                                    : ""
-                                }`}
                               >
-                                {typeof val === "number"
-                                  ? val.toLocaleString()
-                                  : String(val)}
+                                {typeof val === "number" ? val.toLocaleString() : String(val)}
                               </td>
                             );
                           })}
@@ -645,89 +590,76 @@ export function HomeDemo() {
                 </table>
               </div>
 
-              {/* STATS TICKER FOOTER */}
-              <div className="p-2.5 rounded-lg bg-card/60 border border-border/80 flex flex-wrap items-center justify-between text-[11px] font-mono gap-2 text-muted-foreground">
+              <footer className="sandbox-statusbar">
                 {cellStats ? (
-                  <div className="flex items-center gap-3 text-gold">
-                    <span className="font-semibold">Column: {cellStats.colName}</span>
-                    <span>Sum: {cellStats.sum.toLocaleString()}</span>
-                    <span>Avg: {cellStats.avg.toFixed(2)}</span>
-                    <span>Min: {cellStats.min}</span>
-                    <span>Max: {cellStats.max}</span>
+                  <div style={{ display: "flex", gap: "1rem", color: "var(--foreground)" }}>
+                    <strong style={{ color: "var(--gold)" }}>{cellStats.colName}</strong>
+                    <span>n={cellStats.count}</span>
+                    <span>Σ {cellStats.sum.toLocaleString()}</span>
+                    <span>μ {cellStats.avg.toFixed(2)}</span>
+                    <span>min {cellStats.min}</span>
+                    <span>max {cellStats.max}</span>
                   </div>
                 ) : (
                   <span>
-                    Select row {selectedRowIndex !== null ? `#${selectedRowIndex + 1}` : ""} — Click
-                    a numerical cell to compute dynamic column summary statistics.
+                    Row {selectedRowIndex !== null ? `#${selectedRowIndex + 1}` : ""} selected ·
+                    Click any numeric cell for column summary statistics
                   </span>
                 )}
-                <span className="text-[10px] text-gold/80 bg-gold/10 px-2 py-0.5 rounded">
-                  Live Engine
-                </span>
-              </div>
+              </footer>
             </div>
           )}
 
-          {/* TAB 2: RECHARTS VISUALIZER */}
+          {/* TAB 2: CHART VIEW */}
           {activeTab === "chart" && (
-            <div className="space-y-4 flex-1 flex flex-col justify-between">
-              {/* CHART CONFIG TOOLBAR */}
-              <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-card/60 border border-border/60 text-xs">
-                {/* CHART TYPE SELECTOR */}
-                <div className="flex items-center gap-1">
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
+              <div className="sandbox-statusbar">
+                <div className="sandbox-tablist" role="group" aria-label="Chart type">
                   <button
+                    type="button"
+                    aria-label="Bar chart"
+                    aria-selected={chartType === "bar"}
                     onClick={() => setSelectedChartType("bar")}
-                    className={`p-1.5 rounded ${
-                      chartType === "bar"
-                        ? "bg-gold text-ink font-bold"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    title="Bar Chart"
+                    className="sandbox-tab"
                   >
-                    <BarChart2 className="w-4 h-4" />
+                    <BarChart2 size={15} />
                   </button>
                   <button
+                    type="button"
+                    aria-label="Line chart"
+                    aria-selected={chartType === "line"}
                     onClick={() => setSelectedChartType("line")}
-                    className={`p-1.5 rounded ${
-                      chartType === "line"
-                        ? "bg-gold text-ink font-bold"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    title="Line Chart"
+                    className="sandbox-tab"
                   >
-                    <LineIcon className="w-4 h-4" />
+                    <LineIcon size={15} />
                   </button>
                   <button
+                    type="button"
+                    aria-label="Area chart"
+                    aria-selected={chartType === "area"}
                     onClick={() => setSelectedChartType("area")}
-                    className={`p-1.5 rounded ${
-                      chartType === "area"
-                        ? "bg-gold text-ink font-bold"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    title="Area Chart"
+                    className="sandbox-tab"
                   >
-                    <AreaIcon className="w-4 h-4" />
+                    <AreaIcon size={15} />
                   </button>
                   <button
+                    type="button"
+                    aria-label="Pie chart"
+                    aria-selected={chartType === "pie"}
                     onClick={() => setSelectedChartType("pie")}
-                    className={`p-1.5 rounded ${
-                      chartType === "pie"
-                        ? "bg-gold text-ink font-bold"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    title="Pie / Donut Chart"
+                    className="sandbox-tab"
                   >
-                    <PieIcon className="w-4 h-4" />
+                    <PieIcon size={15} />
                   </button>
                 </div>
 
-                {/* Y-AXIS SELECTION */}
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[11px] text-muted-foreground">Metric:</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <label htmlFor="sandbox-metric-select">Metric:</label>
                   <select
+                    id="sandbox-metric-select"
                     value={yKey}
                     onChange={(e) => setOverrideYKey(e.target.value)}
-                    className="bg-card border border-border text-foreground text-xs rounded px-2 py-1 focus:outline-none focus:border-gold font-mono"
+                    className="dataset-chip"
                   >
                     {numericColumns.map((col) => (
                       <option key={col} value={col}>
@@ -738,8 +670,7 @@ export function HomeDemo() {
                 </div>
               </div>
 
-              {/* RECHARTS CONTAINER */}
-              <div className="h-[300px] w-full pt-4">
+              <div style={{ height: "300px", width: "100%", paddingTop: "1rem" }}>
                 <ResponsiveContainer width="100%" height="100%">
                   {chartType === "bar" ? (
                     <BarChart data={parsedData.rows}>
@@ -750,12 +681,12 @@ export function HomeDemo() {
                         contentStyle={{
                           background: "oklch(0.14 0.005 60)",
                           border: "1px solid oklch(0.78 0.13 80 / 0.5)",
-                          borderRadius: "6px",
+                          borderRadius: "4px",
                           color: "#fff",
                           fontSize: "12px",
                         }}
                       />
-                      <Bar dataKey={yKey} fill={GOLD} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey={yKey} fill={GOLD} radius={[3, 3, 0, 0]} />
                     </BarChart>
                   ) : chartType === "line" ? (
                     <LineChart data={parsedData.rows}>
@@ -766,7 +697,7 @@ export function HomeDemo() {
                         contentStyle={{
                           background: "oklch(0.14 0.005 60)",
                           border: "1px solid oklch(0.78 0.13 80 / 0.5)",
-                          borderRadius: "6px",
+                          borderRadius: "4px",
                           color: "#fff",
                           fontSize: "12px",
                         }}
@@ -775,8 +706,8 @@ export function HomeDemo() {
                         type="monotone"
                         dataKey={yKey}
                         stroke={GOLD}
-                        strokeWidth={3}
-                        dot={{ r: 5, fill: GOLD }}
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: GOLD }}
                       />
                     </LineChart>
                   ) : chartType === "area" ? (
@@ -788,7 +719,7 @@ export function HomeDemo() {
                         contentStyle={{
                           background: "oklch(0.14 0.005 60)",
                           border: "1px solid oklch(0.78 0.13 80 / 0.5)",
-                          borderRadius: "6px",
+                          borderRadius: "4px",
                           color: "#fff",
                           fontSize: "12px",
                         }}
@@ -813,7 +744,7 @@ export function HomeDemo() {
                         outerRadius={85}
                         paddingAngle={4}
                       >
-                        {parsedData.rows.map((entry, index) => (
+                        {parsedData.rows.map((_, index) => (
                           <Cell
                             key={`cell-${index}`}
                             fill={CHART_COLORS[index % CHART_COLORS.length]}
@@ -824,7 +755,7 @@ export function HomeDemo() {
                         contentStyle={{
                           background: "oklch(0.14 0.005 60)",
                           border: "1px solid oklch(0.78 0.13 80 / 0.5)",
-                          borderRadius: "6px",
+                          borderRadius: "4px",
                           color: "#fff",
                           fontSize: "12px",
                         }}
@@ -834,137 +765,92 @@ export function HomeDemo() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="text-[11px] text-muted-foreground font-mono text-center pt-2">
-                Plotting <span className="text-gold font-semibold">{yKey}</span> across{" "}
-                <span className="text-gold font-semibold">{xKey}</span> using Recharts SVG engine.
-              </div>
+              <p className="sandbox-breadcrumb" style={{ textAlign: "center", paddingTop: "0.5rem" }}>
+                Plotting <strong style={{ color: "var(--gold)" }}>{yKey}</strong> by{" "}
+                <strong style={{ color: "var(--gold)" }}>{xKey}</strong>
+              </p>
             </div>
           )}
 
-          {/* TAB 3: AI CURATOR SIDEKICK */}
+          {/* TAB 3: SIDEKICK */}
           {activeTab === "ai" && (
-            <div className="space-y-4 flex-1 flex flex-col justify-between">
-              {/* CHAT MESSAGES DISPLAY */}
-              <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
+              <div style={{ maxHeight: "340px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 {chatMessages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`p-3.5 rounded-xl text-xs space-y-1.5 ${
-                      msg.role === "user"
-                        ? "bg-card border border-border text-foreground ml-6"
-                        : "bg-gold/10 border border-gold/30 text-foreground mr-6 shadow-sm"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between font-mono text-[10px] text-muted-foreground">
-                      <span className="flex items-center gap-1.5 font-semibold text-gold">
-                        {msg.role === "assistant" ? (
-                          <>
-                            <Sparkles className="w-3 h-3" /> AI Sidekick Curator
-                          </>
-                        ) : (
-                          "You"
-                        )}
-                      </span>
-                      <span>{msg.time}</span>
-                    </div>
-                    <div className="leading-relaxed font-sans text-foreground/90 whitespace-pre-line">
-                      {msg.content}
-                    </div>
-                  </div>
+                  <article key={idx} className="curator-note">
+                    <header style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.35rem" }}>
+                      <span className="eyebrow">{msg.role === "assistant" ? "Sidekick" : "You"}</span>
+                      <time className="preset-btn__meta">{msg.time}</time>
+                    </header>
+                    <p style={{ fontSize: "0.75rem", lineHeight: 1.6 }}>{msg.content}</p>
+                  </article>
                 ))}
 
-                {isAiThinking && (
-                  <div className="p-3 rounded-xl bg-gold/10 border border-gold/30 text-xs text-gold flex items-center gap-2 animate-pulse">
-                    <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                    <span className="font-mono">Analyzing rows and computing insights...</span>
-                  </div>
-                )}
+                {isAiThinking && <div className="sandbox-statusbar">Reading rows...</div>}
               </div>
 
-              {/* INPUT PROMPT FIELD */}
-              <form onSubmit={handleSendCustomPrompt} className="flex gap-2">
+              <form onSubmit={handleSendCustomPrompt} style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
                 <input
                   type="text"
+                  aria-label="Ask a question about this dataset"
                   value={customPromptInput}
                   onChange={(e) => setCustomPromptInput(e.target.value)}
-                  placeholder="Ask a question about this data..."
-                  className="flex-1 px-3 py-2 rounded-lg bg-card/80 border border-border text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-gold"
+                  placeholder="Ask a question about this dataset..."
+                  style={{ flex: 1, padding: "0.5rem 0.75rem", borderRadius: "var(--radius)", background: "var(--surface-elevated)", border: "1px solid var(--border)", fontSize: "0.75rem", color: "var(--foreground)" }}
                 />
-                <Button
-                  type="submit"
-                  size="sm"
-                  className="bg-gold hover:bg-gold-soft text-ink px-3"
-                >
-                  <Send className="w-3.5 h-3.5" />
+                <Button type="submit" size="sm" aria-label="Send prompt" className="btn-editorial">
+                  <Send size={14} aria-hidden="true" />
                 </Button>
               </form>
             </div>
           )}
         </div>
 
-        {/* RIGHT SIDEBAR: QUICK AI PROMPT RECIPES & CURATOR INSIGHTS */}
-        <div className="lg:col-span-5 p-5 bg-background/60 flex flex-col justify-between space-y-5">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-gold">
-              <Sparkles className="w-4 h-4" />
-              <h3 className="font-display font-bold text-base text-foreground">
-                AI Curator Prompt Recipes
-              </h3>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Click any of the pre-configured analysis prompts below to see how Datafy evaluates
-              numerical metrics and writes editorial insights.
+        {/* RIGHT SIDEBAR: SAMPLE INQUIRIES & CURATOR NOTE */}
+        <aside className="sandbox-sidebar" aria-label="Sample inquiries and curator note">
+          <div>
+            <p className="eyebrow">Sample Inquiries</p>
+            <h3 style={{ fontSize: "1.25rem", marginTop: "0.2rem" }}>Questions for this dataset</h3>
+            <p className="sandbox-breadcrumb" style={{ marginBlock: "0.5rem 1rem" }}>
+              Select a prompt below to preview how the sidekick summarizes metrics and compares rows.
             </p>
 
-            {/* PRESET PROMPTS BUTTON LIST */}
-            <div className="space-y-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               {activePreset.prompts.map((p, idx) => {
                 const isActive = activePromptIndex === idx;
                 return (
                   <button
                     key={idx}
+                    type="button"
+                    aria-pressed={isActive}
                     onClick={() => handleRunPresetPrompt(idx)}
-                    className={`w-full text-left p-3 rounded-xl border text-xs transition-all flex items-start justify-between gap-3 ${
-                      isActive
-                        ? "bg-gold/15 border-gold text-foreground shadow-sm"
-                        : "bg-card/40 border-border/60 text-muted-foreground hover:text-foreground hover:bg-card/80"
-                    }`}
+                    className="inquiry-card"
                   >
-                    <div className="space-y-1">
-                      <p className="font-semibold text-foreground flex items-center gap-1.5">
-                        <MessageCircle className="w-3.5 h-3.5 text-gold shrink-0" />
+                    <div>
+                      <strong style={{ display: "block", color: "var(--foreground)", marginBottom: "0.2rem" }}>
                         {p.title}
-                      </p>
-                      <p className="text-[11px] line-clamp-1 opacity-80">{p.prompt}</p>
+                      </strong>
+                      <span className="preset-btn__meta">{p.prompt}</span>
                     </div>
-                    <ChevronRight
-                      className={`w-4 h-4 shrink-0 transition-transform ${
-                        isActive ? "text-gold translate-x-0.5" : "text-muted-foreground"
-                      }`}
-                    />
+                    <ChevronRight size={15} aria-hidden="true" />
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* EDITORIAL SUMMARY PREVIEW BOX */}
-          <div className="p-4 rounded-xl bg-card border border-gold/30 space-y-3 shadow-md">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-mono text-gold flex items-center gap-1.5 font-semibold">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Editorial Synthesis Output
-              </span>
-              <span className="text-[10px] font-mono text-muted-foreground">Markdown Ready</span>
-            </div>
-            <p className="text-xs text-foreground/90 leading-relaxed font-serif italic border-l-2 border-gold pl-3 py-0.5">
-              "{activePreset.prompts[activePromptIndex]?.response.replace(/\*\*/g, "")}"
-            </p>
+          <figure className="curator-note">
+            <figcaption style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span className="eyebrow">Curator Note</span>
+              <span className="preset-btn__meta">{activePreset.name}</span>
+            </figcaption>
+            <blockquote>
+              {activePreset.prompts[activePromptIndex]?.response.replace(/\*\*/g, "")}
+            </blockquote>
 
-            <div className="pt-2 flex items-center justify-between text-[11px]">
-              <span className="text-muted-foreground font-mono">
-                Context: {activePreset.name}
-              </span>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button
+                type="button"
                 onClick={() => {
                   navigator.clipboard.writeText(
                     activePreset.prompts[activePromptIndex]?.response || ""
@@ -972,22 +858,24 @@ export function HomeDemo() {
                   setCopiedCode(true);
                   setTimeout(() => setCopiedCode(false), 2000);
                 }}
-                className="text-gold hover:underline font-mono flex items-center gap-1"
+                className="dataset-chip"
               >
                 {copiedCode ? (
                   <>
-                    <Check className="w-3 h-3" /> Copied
+                    <Check size={12} aria-hidden="true" />
+                    <span>Copied</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3 h-3" /> Copy Summary
+                    <Copy size={12} aria-hidden="true" />
+                    <span>Copy note</span>
                   </>
                 )}
               </button>
             </div>
-          </div>
-        </div>
+          </figure>
+        </aside>
       </div>
-    </div>
+    </section>
   );
 }

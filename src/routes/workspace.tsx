@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 import { useNavigate } from "@tanstack/react-router";
-import { Lock, Sparkles } from "lucide-react";
+import { Lock } from "lucide-react";
 
 export const Route = createFileRoute("/workspace")({
   component: Workspace,
@@ -195,9 +195,8 @@ function Workspace() {
   if (authLoading) {
     return (
       <main className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background">
-        <div className="flex items-center gap-2 text-gold font-mono text-xs animate-pulse">
-          <Sparkles className="w-4 h-4" />
-          <span>Verifying authentication...</span>
+        <div className="text-muted-foreground font-mono text-xs">
+          Loading workspace...
         </div>
       </main>
     );
@@ -206,24 +205,24 @@ function Workspace() {
   if (!user) {
     return (
       <main className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background px-6 py-12">
-        <div className="max-w-md w-full p-8 rounded-2xl bg-card/60 border border-border shadow-2xl text-center space-y-6 animate-fade-in">
-          <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center text-gold mx-auto">
-            <Lock className="w-6 h-6" />
+        <div className="max-w-md w-full p-8 rounded-md bg-card/50 border border-border shadow-xl text-center space-y-6 animate-fade-in">
+          <div className="w-10 h-10 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center text-gold mx-auto">
+            <Lock className="w-4 h-4" />
           </div>
           <div className="space-y-2">
-            <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
-              Authentication Required
+            <h2 className="font-display text-2xl font-medium tracking-tight text-foreground">
+              Sign in required
             </h2>
-            <p className="text-xs text-muted-foreground font-serif leading-relaxed">
-              To upload datasets, access saved AI sessions, and interact with the editorial canvas,
-              please sign in or create an account.
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Sign in or create an account to upload datasets, save sessions, and use the
+              workspace.
             </p>
           </div>
           <Button
             onClick={() => navigate({ to: "/auth" })}
-            className="w-full bg-gold hover:bg-gold-soft text-ink font-medium text-xs py-2.5 rounded-md shadow-sm"
+            className="w-full bg-gold hover:bg-gold-soft text-ink font-medium text-xs py-2.5 rounded-sm"
           >
-            Sign In or Create Account
+            Sign in or create account
           </Button>
         </div>
       </main>

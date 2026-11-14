@@ -65,11 +65,10 @@ export function DataInput({ onLoad }: Props) {
 
           <div className="flex flex-col items-center text-center gap-5">
             <div
-              className={`relative w-16 h-16 rounded-full border border-gold/40 flex items-center justify-center transition-transform duration-500
-                ${loading ? "animate-pulse" : "group-hover:scale-110 group-hover:-translate-y-1"}`}
+              className={`relative w-14 h-14 rounded-full border border-gold/40 flex items-center justify-center transition-colors duration-300
+                ${loading ? "animate-pulse" : "group-hover:border-gold group-hover:bg-gold/5"}`}
             >
-              <Upload className="w-6 h-6 text-gold" />
-              <span className="absolute inset-0 rounded-full border border-gold/20 animate-ping opacity-40" />
+              <Upload className="w-5 h-5 text-gold" />
             </div>
 
             <div>

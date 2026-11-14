@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
-import { X, Send, Sparkles, Pencil, Check, RotateCcw } from "lucide-react";
+import { X, Send, Pencil, Check, RotateCcw } from "lucide-react";
 import { parseChartSegments, ChartRenderer, ImageRenderer } from "@/components/ChartRenderer";
 import { saveChatMessage, touchDatasetTimestamp } from "@/lib/supabase";
 
@@ -35,28 +35,28 @@ const ChatImage = ({ src, alt }: { src?: string; alt?: string }) => {
     return null;
   }
   return (
-    <div className="my-3 rounded-lg overflow-hidden border border-gold/30 bg-ink/90 p-2 shadow-2xl space-y-2">
+    <div className="my-3 rounded-sm overflow-hidden border border-border bg-ink/90 p-2.5 shadow-xl space-y-2">
       <div className="relative group">
         <img
           src={src}
-          alt={alt || "Python Matplotlib / Seaborn Chart"}
+          alt={alt || "Generated chart"}
           onError={() => setHasError(true)}
-          className="w-full h-auto rounded object-contain max-h-[500px] border border-border/40"
+          className="w-full h-auto rounded-xs object-contain max-h-[500px] border border-border/40"
         />
         {src && (
           <a
             href={src}
             target="_blank"
             rel="noopener noreferrer"
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-gold text-foreground hover:text-ink px-2.5 py-1 rounded text-[10px] font-mono font-medium shadow"
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/90 hover:bg-gold text-foreground hover:text-ink px-2.5 py-1 rounded-xs text-[10px] font-mono font-medium shadow"
           >
-            🔍 View Full Resolution
+            View full size
           </a>
         )}
       </div>
-      <div className="flex items-center justify-between text-[10px] text-gold/80 font-mono px-1">
-        <span>📊 Python Seaborn / Matplotlib Graphic</span>
-        <span>dpi=150</span>
+      <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono px-1">
+        <span>Generated figure</span>
+        <span>150 dpi</span>
       </div>
     </div>
   );
@@ -157,7 +157,7 @@ export const AIChat = ({
           id: crypto.randomUUID(),
           role: "assistant",
           content:
-            "⚠️ Request timed out or encountered a network error. Try highlighting specific columns or rows for faster analysis.",
+            "Request timed out or encountered a network error. Try highlighting specific columns or rows for faster analysis.",
         },
       ]);
     } finally {
@@ -249,14 +249,14 @@ export const AIChat = ({
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
         {messages.length === 0 && (
-          <div className="text-center py-10">
-            <Sparkles className="w-7 h-7 text-gold mx-auto mb-4 opacity-70" />
-            <p className="font-display text-lg text-foreground/90 leading-snug max-w-[300px] mx-auto">
+          <div className="text-center py-12 space-y-3">
+            <p className="eyebrow text-[0.6rem]">Ready</p>
+            <p className="font-display text-xl text-foreground/90 leading-snug max-w-[280px] mx-auto">
               Highlight any part of the table and I'll plot it, summarize it, or tell you what's
               interesting.
             </p>
-            <p className="text-xs text-muted-foreground/70 mt-4">
-              Or just ask me anything about your data.
+            <p className="text-xs text-muted-foreground/70">
+              Or ask a question about the full dataset below.
             </p>
           </div>
         )}
@@ -268,12 +268,12 @@ export const AIChat = ({
             <div key={m.id} className={m.role === "user" ? "flex justify-end group" : "space-y-1"}>
               {m.role === "user" ? (
                 editingMessageId === m.id ? (
-                  <div className="max-w-[90%] bg-gold/20 border border-gold p-2.5 rounded-md space-y-2">
+                  <div className="max-w-[90%] bg-gold/20 border border-gold p-2.5 rounded-sm space-y-2">
                     <textarea
                       value={editingText}
                       onChange={(e) => setEditingText(e.target.value)}
                       rows={2}
-                      className="w-full bg-background border border-gold/40 rounded p-2 text-xs text-foreground focus:outline-none focus:border-gold font-sans"
+                      className="w-full bg-background border border-gold/40 rounded-xs p-2 text-xs text-foreground focus:outline-none focus:border-gold font-sans"
                     />
                     <div className="flex justify-end gap-1.5">
                       <Button
@@ -291,7 +291,7 @@ export const AIChat = ({
                         size="sm"
                         onClick={() => handleSaveEdit(m.id)}
                         disabled={isLoading || !editingText.trim()}
-                        className="bg-gold text-ink hover:bg-gold-soft text-[11px] h-6 px-2.5 font-medium"
+                        className="bg-gold text-ink hover:bg-gold-soft text-[11px] h-6 px-2.5 font-medium rounded-xs"
                       >
                         <Check className="w-3 h-3 mr-1" /> Save & Resubmit
                       </Button>
@@ -331,27 +331,27 @@ export const AIChat = ({
                       return (
                         <div
                           key={i}
-                          className="text-sm leading-relaxed text-foreground/90 font-serif space-y-2"
+                          className="text-sm leading-relaxed text-foreground/90 font-sans space-y-2"
                         >
                           <ReactMarkdown
                             components={{
                               h1: ({ children }) => (
-                                <h1 className="text-base font-bold text-gold font-display mt-3 mb-1">
+                                <h1 className="text-lg font-medium text-gold font-display mt-3 mb-1">
                                   {children}
                                 </h1>
                               ),
                               h2: ({ children }) => (
-                                <h2 className="text-sm font-bold text-gold font-display mt-2 mb-1">
+                                <h2 className="text-base font-medium text-gold font-display mt-2 mb-1">
                                   {children}
                                 </h2>
                               ),
                               h3: ({ children }) => (
-                                <h3 className="text-xs font-semibold text-gold font-display mt-2 mb-1">
+                                <h3 className="text-sm font-medium text-gold font-display mt-2 mb-1">
                                   {children}
                                 </h3>
                               ),
                               p: ({ children }) => (
-                                <p className="mb-2 leading-relaxed">{children}</p>
+                                <p className="mb-2 leading-relaxed text-xs sm:text-sm">{children}</p>
                               ),
                               strong: ({ children }) => (
                                 <strong className="font-semibold text-gold">{children}</strong>
@@ -371,7 +371,7 @@ export const AIChat = ({
                               ),
                               li: ({ children }) => <li className="leading-normal">{children}</li>,
                               code: ({ children }) => (
-                                <code className="bg-secondary/70 text-gold px-1.5 py-0.5 rounded font-mono text-[11px]">
+                                <code className="bg-secondary/70 text-gold px-1.5 py-0.5 rounded-xs font-mono text-[11px]">
                                   {children}
                                 </code>
                               ),
@@ -393,7 +393,7 @@ export const AIChat = ({
         {isLoading && (
           <div className="space-y-1">
             <p className="eyebrow text-[0.55rem]">Sidekick</p>
-            <p className="text-sm text-muted-foreground italic">Thinking and analyzing data...</p>
+            <p className="text-xs text-muted-foreground font-mono">Reading selection...</p>
           </div>
         )}
       </div>
@@ -401,7 +401,7 @@ export const AIChat = ({
       <div className="border-t border-border p-4 space-y-3">
         {activeSelectionLabel && (
           <div className="text-[10px] text-gold/80 font-mono uppercase tracking-widest">
-            ✦ Working with {activeSelectionLabel}
+            Working with {activeSelectionLabel}
           </div>
         )}
         <div className="flex gap-2 flex-wrap">

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { toast } from "sonner";
-import { LogIn, UserPlus, Sparkles, KeyRound, AlertTriangle } from "lucide-react";
+import { LogIn, UserPlus, AlertTriangle } from "lucide-react";
 
 interface AuthModalProps {
   open: boolean;
@@ -154,19 +154,13 @@ export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
             <Button
               type="submit"
               disabled={loading || !isSupabaseConfigured}
-              className="w-full bg-gold hover:bg-gold-soft text-ink text-xs font-medium rounded-sm py-2 mt-2 transition-all"
+              className="w-full bg-gold hover:bg-gold-soft text-ink text-xs font-medium rounded-sm py-2 mt-2 transition-colors"
             >
-              {loading ? (
-                "Processing..."
-              ) : tab === "signin" ? (
-                <span className="flex items-center justify-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5" /> Sign In to Workspace
-                </span>
-              ) : (
-                <span className="flex items-center justify-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> Create Account
-                </span>
-              )}
+              {loading
+                ? "Processing..."
+                : tab === "signin"
+                ? "Sign In"
+                : "Create Account"}
             </Button>
           </form>
         </Tabs>

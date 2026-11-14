@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
-import { Sparkles, Database, ShieldCheck, Cpu, Feather, ArrowRight, Layers } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/about")({
   component: About,
@@ -8,113 +7,111 @@ export const Route = createFileRoute("/about")({
 
 function About() {
   return (
-    <main className="min-h-screen bg-background text-foreground animate-fade-in py-12 px-6">
-      <div className="max-w-4xl mx-auto space-y-16">
+    <main className="editorial-page">
+      <div className="editorial-section" style={{ maxWidth: "var(--container-reading)" }}>
         {/* HERO HEADER */}
-        <section className="text-center space-y-4 pt-6">
-          <span className="text-xs uppercase tracking-widest font-mono text-gold px-3 py-1 rounded-full bg-gold/10 border border-gold/20">
-            Editorial Philosophy & Architecture
-          </span>
-          <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight text-foreground">
-            Treating Data Like Literature<span className="text-gold">.</span>
+        <header style={{ marginBottom: "3.5rem" }}>
+          <p className="eyebrow">Design &amp; Approach</p>
+          <h1 className="hero-headline" style={{ fontSize: "clamp(2.25rem, 1.8rem + 2.5vw, 3.75rem)", marginBlock: "0.75rem 1rem" }}>
+            Reading data before querying it<span className="brand-mark__dot">.</span>
           </h1>
-          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed font-serif">
-            Datafy was built on a simple premise: spreadsheets should not feel like tedious admin
-            panels. They should read like beautifully curated editorial publications.
+          <p className="hero-summary" style={{ marginInline: 0 }}>
+            Most data tools ask you to choose between a dense spreadsheet grid and a blank chat box.
+            Datafy keeps the table, the chart, and the written interpretation side by side—so every
+            question stays anchored to the numbers in front of you.
           </p>
-        </section>
+        </header>
+
+        <div className="hairline" style={{ marginBottom: "3.5rem" }} role="separator" />
 
         {/* THREE CORE PILLARS */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 rounded-xl bg-card/40 border border-border space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
-              <Feather className="w-5 h-5" />
-            </div>
-            <h3 className="font-display text-lg font-semibold">Editorial Aesthetics</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Curated serif typography, dark gold accents, and fluid layout math that make deep
-              research visually engaging.
+        <section className="capabilities-grid" style={{ marginBottom: "3.5rem" }} aria-label="Core principles">
+          <article className="capability-card">
+            <p className="eyebrow">01 / Legibility</p>
+            <h2 style={{ fontSize: "1.25rem", marginBlock: "0.4rem" }}>Calm Typography</h2>
+            <p>
+              Tabular numerals, restrained contrast, and clear visual hierarchy keep long sessions
+              readable even across wide tables.
             </p>
-          </div>
+          </article>
 
-          <div className="p-6 rounded-xl bg-card/40 border border-border space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
-              <Cpu className="w-5 h-5" />
-            </div>
-            <h3 className="font-display text-lg font-semibold">AI Curator Sidekick</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              An inline AI analyst that automatically aggregates cell selections, computes
-              distributions, and renders charts.
+          <article className="capability-card">
+            <p className="eyebrow">02 / Precision</p>
+            <h2 style={{ fontSize: "1.25rem", marginBlock: "0.4rem" }}>Scoped Context</h2>
+            <p>
+              Instead of passing an entire file blindly, highlight the exact cells, rows, or columns
+              you want summarized or plotted.
             </p>
-          </div>
+          </article>
 
-          <div className="p-6 rounded-xl bg-card/40 border border-border space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <h3 className="font-display text-lg font-semibold">Edge Security</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Deployed on Cloudflare Workers edge runtime with PostgreSQL Row Level Security (RLS)
-              via Supabase.
+          <article className="capability-card">
+            <p className="eyebrow">03 / Continuity</p>
+            <h2 style={{ fontSize: "1.25rem", marginBlock: "0.4rem" }}>Saved Sessions</h2>
+            <p>
+              Uploaded datasets and conversation threads are stored per account so you can revisit
+              an analysis where you left off.
             </p>
-          </div>
+          </article>
         </section>
 
-        {/* TECHNICAL ARCHITECTURE */}
-        <section className="p-8 rounded-2xl bg-card/30 border border-border/80 space-y-6">
-          <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-gold" />
-            <h2 className="font-display text-2xl font-bold">System Architecture</h2>
-          </div>
+        {/* HOW IT FITS TOGETHER */}
+        <section className="curator-note" style={{ padding: "2rem", marginBottom: "3.5rem" }} aria-labelledby="architecture-heading">
+          <header style={{ marginBottom: "1.5rem" }}>
+            <p className="eyebrow">Under the Hood</p>
+            <h2 id="architecture-heading" style={{ fontSize: "1.5rem", marginTop: "0.25rem" }}>
+              How the workspace operates
+            </h2>
+          </header>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div className="p-4 rounded-lg bg-secondary/40 border border-border/50 space-y-1">
-              <span className="font-mono text-gold font-semibold">01. Frontend Runtime</span>
-              <p className="text-muted-foreground">
-                TanStack Start SSR + React 19 + TailwindCSS + Recharts for 60fps chart rendering.
-              </p>
+          <dl className="capabilities-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(15rem, 1fr))" }}>
+            <div className="capability-card">
+              <dt className="eyebrow">01 / Local Table Engine</dt>
+              <dd style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", marginTop: "0.5rem", lineHeight: 1.6 }}>
+                CSV files are parsed in the browser with automatic column type inference and instant
+                selection statistics.
+              </dd>
             </div>
 
-            <div className="p-4 rounded-lg bg-secondary/40 border border-border/50 space-y-1">
-              <span className="font-mono text-gold font-semibold">02. Edge Infrastructure</span>
-              <p className="text-muted-foreground">
-                Cloudflare Workers globally distributed edge network with zero cold-starts.
-              </p>
+            <div className="capability-card">
+              <dt className="eyebrow">02 / Spatial Serialization</dt>
+              <dd style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", marginTop: "0.5rem", lineHeight: 1.6 }}>
+                Cell, row, and column selections are serialized into compact sub-tables so the
+                sidekick reasons over your active slice.
+              </dd>
             </div>
 
-            <div className="p-4 rounded-lg bg-secondary/40 border border-border/50 space-y-1">
-              <span className="font-mono text-gold font-semibold">03. Persistence Layer</span>
-              <p className="text-muted-foreground">
-                Supabase PostgreSQL with RLS policies ensuring isolated user dataset workspaces.
-              </p>
+            <div className="capability-card">
+              <dt className="eyebrow">03 / Inline Graphics</dt>
+              <dd style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", marginTop: "0.5rem", lineHeight: 1.6 }}>
+                Charts render directly inside the conversation stream and let you switch between
+                bar, line, area, scatter, and pie views.
+              </dd>
             </div>
 
-            <div className="p-4 rounded-lg bg-secondary/40 border border-border/50 space-y-1">
-              <span className="font-mono text-gold font-semibold">04. AI Sidekick Brain</span>
-              <p className="text-muted-foreground">
-                Vercel AI SDK + Google Gemini & Groq LLMs connected for instant analytical
-                responses.
-              </p>
+            <div className="capability-card">
+              <dt className="eyebrow">04 / Account Persistence</dt>
+              <dd style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", marginTop: "0.5rem", lineHeight: 1.6 }}>
+                Datasets and chat threads sync to your account database with row-level isolation
+                between users.
+              </dd>
             </div>
-          </div>
+          </dl>
         </section>
 
         {/* CTA BANNER */}
-        <section className="text-center p-10 rounded-2xl bg-gradient-to-b from-card to-background border border-gold/30 space-y-4">
-          <h2 className="font-display text-3xl font-bold">Ready to curate your data?</h2>
-          <p className="text-xs text-muted-foreground max-w-md mx-auto">
-            Upload any CSV file or paste tabular data to launch your interactive editorial canvas.
-          </p>
-          <Link to="/workspace">
-            <Button
-              size="lg"
-              className="bg-gold hover:bg-gold-soft text-ink font-medium px-6 text-xs rounded-sm"
-            >
-              <Sparkles className="w-4 h-4 mr-2" /> Launch Workspace{" "}
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
-        </section>
+        <aside className="cta-panel" style={{ paddingInline: 0 }}>
+          <div className="cta-panel__box">
+            <h2>Open the workspace</h2>
+            <p>
+              Upload a CSV file or try one of the sample datasets to explore your numbers on the
+              canvas.
+            </p>
+            <Link to="/workspace" className="btn-editorial btn-editorial--lg">
+              <span>Open Workspace</span>
+              <ArrowRight size={14} aria-hidden="true" />
+            </Link>
+          </div>
+        </aside>
       </div>
     </main>
   );
