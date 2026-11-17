@@ -252,6 +252,75 @@
   animation: line-expand 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@keyframes pulse-gold {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}
+
+.live-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--gold);
+  display: inline-block;
+  animation: pulse-gold 1.8s ease-in-out infinite;
+}
+
+@keyframes stream-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 0.9em;
+  background-color: var(--gold);
+  margin-left: 2px;
+  vertical-align: baseline;
+  animation: stream-blink 0.9s infinite;
+}
+
+.tour-progress-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--border-subtle);
+  overflow: hidden;
+}
+
+.tour-progress-fill {
+  height: 100%;
+  background-color: var(--gold);
+}
+
+.hero-dropzone-overlay {
+  position: absolute;
+  inset: 0.5rem;
+  z-index: 40;
+  background-color: oklch(0.12 0.005 60 / 0.94);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--gold);
+  border-radius: var(--radius);
+  animation: editorial-fade 0.25s var(--ease-editorial) both;
+}
+
 /* ==========================================================================
    Editorial Design System — Semantic Layout & Component Architecture
    ========================================================================== */
@@ -401,6 +470,56 @@
   box-shadow: var(--shadow-glow);
 }
 
+/* Animated Button Arrow Micro-Interactions */
+@keyframes arrow-nudge-x {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes arrow-nudge-y {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+@keyframes btn-subtle-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px oklch(0.78 0.13 80 / 0.18);
+  }
+  50% {
+    box-shadow: 0 0 20px oklch(0.78 0.13 80 / 0.45);
+  }
+}
+
+.btn-animated-arrow {
+  position: relative;
+  animation: btn-subtle-glow 3.2s ease-in-out infinite;
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-animated-arrow:hover {
+  transform: translateY(-1px);
+}
+
+.btn-animated-arrow .arrow-icon {
+  display: inline-flex;
+  align-items: center;
+  animation: arrow-nudge-x 1.8s ease-in-out infinite;
+  transition: transform 0.2s ease;
+}
+
+.btn-animated-arrow:hover .arrow-icon {
+  animation: none;
+  transform: translateX(5px);
+}
+
 .btn-secondary-editorial {
   display: inline-flex;
   align-items: center;
@@ -415,12 +534,28 @@
   border: 1px solid var(--border);
   text-decoration: none;
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .btn-secondary-editorial:hover {
   color: var(--gold);
   border-color: var(--border-gold-muted);
+}
+
+.btn-animated-arrow-down:hover {
+  transform: translateY(-1px);
+}
+
+.btn-animated-arrow-down .arrow-icon {
+  display: inline-flex;
+  align-items: center;
+  animation: arrow-nudge-y 1.8s ease-in-out infinite;
+  transition: transform 0.2s ease;
+}
+
+.btn-animated-arrow-down:hover .arrow-icon {
+  animation: none;
+  transform: translateY(4px);
 }
 
 /* Landing Page & Hero Entrance */
@@ -443,6 +578,18 @@
   inset: 0 0 auto 0;
   height: 520px;
   background: radial-gradient(ellipse 55% 50% at 50% 15%, oklch(0.78 0.13 80 / 0.11), transparent 70%);
+  animation: spotlight-breath 7s ease-in-out infinite alternate;
+}
+
+@keyframes spotlight-breath {
+  0% {
+    opacity: 0.65;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
 }
 
 .hero-stage {
@@ -603,16 +750,83 @@
   background-color: oklch(0.78 0.13 80 / 0.12);
 }
 
+.chip-arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.dataset-chip:hover .chip-arrow {
+  transform: translate(2px, -2px);
+}
+
 .dataset-chip--dashed {
   border-style: dashed;
 }
 
 .hero-stem {
+  position: relative;
   width: 1px;
-  height: 2.5rem;
+  height: 2.75rem;
   background: linear-gradient(to bottom, oklch(0.78 0.13 80 / 0.4), var(--border-subtle));
   margin: 2.5rem auto 0;
+  overflow: hidden;
   animation: editorial-fade 0.6s var(--ease-editorial) 480ms both;
+}
+
+.hero-stem::after {
+  content: "";
+  position: absolute;
+  top: -24px;
+  left: -1px;
+  width: 3px;
+  height: 20px;
+  border-radius: 999px;
+  background: linear-gradient(to bottom, transparent, var(--gold), #ffffff);
+  box-shadow: 0 0 6px var(--gold);
+  animation: stem-bead-flow 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes stem-bead-flow {
+  0% {
+    top: -24px;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.mini-equalizer {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2.5px;
+  height: 12px;
+}
+
+.mini-equalizer span {
+  width: 2px;
+  height: 100%;
+  background-color: var(--gold);
+  border-radius: 1px;
+  animation: eq-breathe 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes eq-breathe {
+  0% {
+    height: 30%;
+    opacity: 0.4;
+  }
+  100% {
+    height: 100%;
+    opacity: 1;
+  }
 }
 
 /* Specification Ledger */

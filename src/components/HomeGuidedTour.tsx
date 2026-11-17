@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FileSpreadsheet,
   MousePointerClick,
   MessageSquare,
   BarChart3,
   ArrowRight,
+  Play,
+  Pause,
+  Sparkles,
 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 
 interface Step {
   id: number;
@@ -93,18 +96,162 @@ Series: 6 records plotted`,
 
 export function HomeGuidedTour() {
   const [activeStepId, setActiveStepId] = useState<number>(1);
+  const [isAutoplaying, setIsAutoplaying] = useState<boolean>(true);
+  const [stepProgress, setStepProgress] = useState<number>(0);
+
+  // Widget 1 state (Ingest simulation)
+  const [selectedMockFile, setSelectedMockFile] = useState<number>(0);
+  const mockFiles = [
+    { name: "global_markets_2026.csv", rows: 1240, cols: 8, numeric: 6, delimiter: "Comma (,)" },
+    { name: "frontier_ai_evals.tsv", rows: 480, cols: 6, numeric: 5, delimiter: "Tab (\\t)" },
+    { name: "saas_retention_cohorts.csv", rows: 890, cols: 9, numeric: 7, delimiter: "Comma (,)" },
+  ];
+
+  // Widget 2 state (Spatial Selection simulation)
+  const [selectedMockRows, setSelectedMockRows] = useState<number[]>([1, 4]);
+  const mockTableData = [
+    { country: "United States", gdp: 26854, growth: 2.5 },
+    { country: "China", gdp: 17734, growth: 5.2 },
+    { country: "Germany", gdp: 4456, growth: 1.3 },
+    { country: "Japan", gdp: 4212, growth: 1.9 },
+    { country: "India", gdp: 3730, growth: 7.2 },
+  ];
+
+  // Widget 3 state (AI Typewriter stream simulation)
+  const [streamIndex, setStreamIndex] = useState<number>(0);
+  const fullAiResponses = [
+    "India leads the selection with 7.2% GDP growth, outpacing mature economies by over 400 basis points while sustaining an 84.1 tech expansion index.",
+    "China at $17.7T GDP represents 47% of the selected collective output, maintaining moderate 5.2% acceleration with 2.4% R&D reinvestment.",
+  ];
+  const [activeAiPrompt, setActiveAiPrompt] = useState<number>(0);
+
+  // Widget 4 state (Chart view simulation)
+  const [mockChartMode, setMockChartMode] = useState<"bar" | "line" | "area">("bar");
+
   const activeStep = STEPS.find((s) => s.id === activeStepId) || STEPS[0];
+
+  // Autoplay loop timer
+  const STEP_DURATION = 5500; // 5.5s per beat
+  useEffect(() => {
+    if (!isAutoplaying) {
+      setStepProgress(0);
+      return;
+    }
+
+    const interval = 50;
+    const timer = setInterval(() => {
+      setStepProgress((prev) => {
+        if (prev >= 100) {
+          setActiveStepId((current) => (current >= 4 ? 1 : current + 1));
+          return 0;
+        }
+        return prev + (interval / STEP_DURATION) * 100;
+      });
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [isAutoplaying, activeStepId]);
+
+  // Streaming text effect for Step 3
+  useEffect(() => {
+    if (activeStepId !== 3) return;
+    setStreamIndex(0);
+    const targetText = fullAiResponses[activeAiPrompt];
+    const streamTimer = setInterval(() => {
+      setStreamIndex((prev) => {
+        if (prev >= targetText.length) {
+          clearInterval(streamTimer);
+          return prev;
+        }
+        return prev + 2;
+      });
+    }, 24);
+
+    return () => clearInterval(streamTimer);
+  }, [activeStepId, activeAiPrompt]);
+
+  // Selection metrics calculation for Step 2
+  const selectedRecords = mockTableData.filter((_, idx) => selectedMockRows.includes(idx));
+  const selectionCount = selectedRecords.length;
+  const selectionSum = selectedRecords.reduce((acc, curr) => acc + curr.gdp, 0);
+  const selectionAvgGrowth =
+    selectionCount > 0
+      ? selectedRecords.reduce((acc, curr) => acc + curr.growth, 0) / selectionCount
+      : 0;
+  const selectionMaxGrowth =
+    selectionCount > 0 ? Math.max(...selectedRecords.map((r) => r.growth)) : 0;
+
+  const toggleMockRow = (idx: number) => {
+    setIsAutoplaying(false);
+    setSelectedMockRows((prev) =>
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+    );
+  };
 
   return (
     <section className="editorial-section" aria-labelledby="workflow-heading">
-      {/* HEADER */}
+      {/* HEADER & AUTOPLAY CONTROLLER */}
       <header className="section-heading">
-        <p className="eyebrow">Workflow</p>
+        <p className="eyebrow">Interactive Tour</p>
         <h2 id="workflow-heading">How a session unfolds</h2>
-        <p>From a raw CSV file to a charted, annotated workspace in four steps.</p>
+        <p>From a raw CSV file to a charted, annotated workspace in four coordinated beats.</p>
+
+        {/* CONTROLLER TOOLBAR */}
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            marginTop: "1.25rem",
+            padding: "0.35rem 0.75rem",
+            borderRadius: "var(--radius)",
+            background: "var(--surface-elevated)",
+            border: "1px solid var(--border-subtle)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setIsAutoplaying((prev) => !prev);
+              setStepProgress(0);
+            }}
+            className="btn-secondary-editorial"
+            style={{ padding: "0.25rem 0.65rem", fontSize: "0.6875rem", gap: "0.35rem" }}
+          >
+            {isAutoplaying ? (
+              <>
+                <Pause size={12} aria-hidden="true" />
+                <span>Pause Auto-Tour</span>
+              </>
+            ) : (
+              <>
+                <Play size={12} aria-hidden="true" />
+                <span>Play Auto-Tour</span>
+              </>
+            )}
+          </button>
+
+          <span className="preset-btn__meta" style={{ fontVariantNumeric: "tabular-nums" }}>
+            Beat {activeStepId} of 4
+          </span>
+
+          <a
+            href="#demo"
+            className="preset-btn__meta"
+            style={{
+              color: "var(--gold)",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.2rem",
+            }}
+          >
+            <span>Live Sandbox ↓</span>
+          </a>
+        </div>
       </header>
 
-      {/* STEPPER NAV TABS */}
+      {/* STEPPER NAV TABS WITH ANIMATED PROGRESS BAR */}
       <div className="workflow-stepper" role="tablist" aria-label="Workflow steps">
         {STEPS.map((s) => {
           const Icon = s.icon;
@@ -115,8 +262,13 @@ export function HomeGuidedTour() {
               type="button"
               role="tab"
               aria-selected={isActive}
-              onClick={() => setActiveStepId(s.id)}
+              onClick={() => {
+                setIsAutoplaying(false);
+                setActiveStepId(s.id);
+                setStepProgress(0);
+              }}
               className="workflow-step-btn"
+              style={{ position: "relative", overflow: "hidden" }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span className="eyebrow">{s.badge}</span>
@@ -127,6 +279,19 @@ export function HomeGuidedTour() {
                 />
               </div>
               <h3>{s.title}</h3>
+
+              {/* Progress bar inside active step */}
+              {isActive && (
+                <div className="tour-progress-track">
+                  <div
+                    className="tour-progress-fill"
+                    style={{
+                      width: isAutoplaying ? `${stepProgress}%` : "100%",
+                      transition: isAutoplaying ? "width 0.05s linear" : "none",
+                    }}
+                  />
+                </div>
+              )}
             </button>
           );
         })}
@@ -148,139 +313,433 @@ export function HomeGuidedTour() {
             {activeStep.description}
           </p>
 
-          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.25rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <ul
+            style={{
+              listStyle: "none",
+              padding: 0,
+              margin: "0 0 1.25rem",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.5rem",
+            }}
+          >
             {activeStep.keyPoints.map((pt, idx) => (
-              <li key={idx} style={{ display: "flex", alignItems: "baseline", gap: "0.6rem", fontSize: "0.75rem" }}>
-                <span className="eyebrow" aria-hidden="true">—</span>
+              <li
+                key={idx}
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: "0.6rem",
+                  fontSize: "0.75rem",
+                }}
+              >
+                <span className="eyebrow" aria-hidden="true">
+                  —
+                </span>
                 <span>{pt}</span>
               </li>
             ))}
           </ul>
 
           <div className="sandbox-statusbar">
-            <pre style={{ margin: 0, whiteSpace: "pre-wrap", lineHeight: 1.5, color: "var(--foreground)" }}>
+            <pre
+              style={{
+                margin: 0,
+                whiteSpace: "pre-wrap",
+                lineHeight: 1.5,
+                color: "var(--foreground)",
+              }}
+            >
               {activeStep.codeSnippet}
             </pre>
           </div>
         </div>
 
-        {/* RIGHT: INTERACTIVE MINI-WIDGET PREVIEW */}
+        {/* RIGHT: INTERACTIVE DYNAMIC PREVIEW BOX */}
         <aside className="workflow-preview-box" aria-label="Step preview">
+          {/* BEAT 1: INGEST PREVIEW */}
           {activeStep.previewWidget === "ingest" && (
             <>
-              <header style={{ display: "flex", justifyContent: "space-between", paddingBottom: "0.6rem", borderBottom: "1px solid var(--border)" }}>
-                <span className="sandbox-breadcrumb" style={{ color: "var(--foreground)", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+              <header
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  paddingBottom: "0.6rem",
+                  borderBottom: "1px solid var(--border)",
+                }}
+              >
+                <span
+                  className="sandbox-breadcrumb"
+                  style={{
+                    color: "var(--foreground)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
+                >
                   <FileSpreadsheet size={14} style={{ color: "var(--gold)" }} />
-                  <span>global_market.csv</span>
+                  <span>{mockFiles[selectedMockFile].name}</span>
                 </span>
-                <span className="preset-btn__meta">Parsed</span>
+                <span className="preset-btn__meta" style={{ color: "var(--gold)" }}>
+                  ● Parsed in 12ms
+                </span>
               </header>
 
-              <dl className="curator-note" style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
-                  <dt className="preset-btn__meta">Rows</dt>
-                  <dd>1,240</dd>
+              <dl
+                className="curator-note"
+                style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "0.4rem",
+                  }}
+                >
+                  <dt className="preset-btn__meta">Rows Parsed</dt>
+                  <dd>
+                    <AnimatedNumber value={mockFiles[selectedMockFile].rows} />
+                  </dd>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
-                  <dt className="preset-btn__meta">Columns</dt>
-                  <dd>12 numeric · 4 text</dd>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "0.4rem",
+                  }}
+                >
+                  <dt className="preset-btn__meta">Columns Detected</dt>
+                  <dd>
+                    <AnimatedNumber value={mockFiles[selectedMockFile].numeric} /> numeric ·{" "}
+                    <AnimatedNumber
+                      value={
+                        mockFiles[selectedMockFile].cols - mockFiles[selectedMockFile].numeric
+                      }
+                    />{" "}
+                    text
+                  </dd>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <dt className="preset-btn__meta">Delimiter</dt>
-                  <dd>Comma (,)</dd>
+                  <dt className="preset-btn__meta">Delimiter Syntax</dt>
+                  <dd>{mockFiles[selectedMockFile].delimiter}</dd>
                 </div>
               </dl>
 
-              <p className="preset-btn__meta" style={{ lineHeight: 1.5 }}>
-                Files are parsed directly in your browser tab so you can inspect and filter rows
-                immediately.
-              </p>
+              {/* Sample file toggles */}
+              <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+                {mockFiles.map((f, i) => (
+                  <button
+                    key={f.name}
+                    type="button"
+                    onClick={() => {
+                      setIsAutoplaying(false);
+                      setSelectedMockFile(i);
+                    }}
+                    className="dataset-chip"
+                    style={{
+                      borderColor: selectedMockFile === i ? "var(--gold)" : undefined,
+                      color: selectedMockFile === i ? "var(--gold)" : undefined,
+                    }}
+                  >
+                    File {i + 1}
+                  </button>
+                ))}
+              </div>
             </>
           )}
 
+          {/* BEAT 2: SPATIAL SELECTION PREVIEW */}
           {activeStep.previewWidget === "selection" && (
             <>
-              <header style={{ display: "flex", justifyContent: "space-between", paddingBottom: "0.6rem", borderBottom: "1px solid var(--border)" }}>
-                <span className="sandbox-breadcrumb" style={{ color: "var(--foreground)", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+              <header
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  paddingBottom: "0.6rem",
+                  borderBottom: "1px solid var(--border)",
+                }}
+              >
+                <span
+                  className="sandbox-breadcrumb"
+                  style={{
+                    color: "var(--foreground)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
+                >
                   <MousePointerClick size={14} style={{ color: "var(--gold)" }} />
-                  <span>Active Selection</span>
+                  <span>Click Rows to Isolate</span>
                 </span>
-                <span className="eyebrow">2 rows · 2 cols</span>
+                <span className="eyebrow" style={{ fontVariantNumeric: "tabular-nums" }}>
+                  <AnimatedNumber value={selectionCount} /> rows selected
+                </span>
               </header>
 
-              <div className="curator-note" style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <div style={{ padding: "0.5rem", border: "1px solid var(--border-gold-muted)", color: "var(--gold)" }}>
-                  Row 5 · India — GDP: 3,730 | Growth: 7.2%
-                </div>
-                <div style={{ padding: "0.5rem", border: "1px solid var(--border)" }}>
-                  Row 2 · China — GDP: 17,734 | Growth: 5.2%
-                </div>
+              {/* Clickable mini rows */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.35rem",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "0.75rem",
+                }}
+              >
+                {mockTableData.map((row, idx) => {
+                  const isSelected = selectedMockRows.includes(idx);
+                  return (
+                    <div
+                      key={row.country}
+                      onClick={() => toggleMockRow(idx)}
+                      style={{
+                        padding: "0.45rem 0.65rem",
+                        borderRadius: "var(--radius)",
+                        border: isSelected
+                          ? "1px solid var(--border-gold-muted)"
+                          : "1px solid var(--border-subtle)",
+                        backgroundColor: isSelected
+                          ? "oklch(0.78 0.13 80 / 0.12)"
+                          : "var(--surface-glass)",
+                        color: isSelected ? "var(--foreground)" : "var(--muted-foreground)",
+                        cursor: "pointer",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span
+                          style={{
+                            width: "6px",
+                            height: "6px",
+                            borderRadius: "50%",
+                            backgroundColor: isSelected ? "var(--gold)" : "var(--border)",
+                          }}
+                        />
+                        <span>{row.country}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: "0.75rem" }}>
+                        <span>${row.gdp.toLocaleString()}B</span>
+                        <strong style={{ color: isSelected ? "var(--gold)" : "inherit" }}>
+                          {row.growth}%
+                        </strong>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
-              <footer className="sandbox-statusbar">
-                <span>n=2</span>
-                <span>Σ 21,464</span>
-                <span>μ 6.2% growth</span>
+              {/* Dynamic Animated Status Bar */}
+              <footer className="sandbox-statusbar" style={{ fontVariantNumeric: "tabular-nums" }}>
+                <span>
+                  n=<AnimatedNumber value={selectionCount} />
+                </span>
+                <span>
+                  Σ $<AnimatedNumber value={selectionSum} />B
+                </span>
+                <span>
+                  μ <AnimatedNumber value={selectionAvgGrowth} decimals={2} />%
+                </span>
+                <span>
+                  max <AnimatedNumber value={selectionMaxGrowth} decimals={1} />%
+                </span>
               </footer>
             </>
           )}
 
+          {/* BEAT 3: INTERROGATE / STREAMING AI PREVIEW */}
           {activeStep.previewWidget === "ai" && (
             <>
-              <header style={{ display: "flex", justifyContent: "space-between", paddingBottom: "0.6rem", borderBottom: "1px solid var(--border)" }}>
-                <span className="eyebrow">Sidekick</span>
-                <span className="preset-btn__meta">Working with 2 rows</span>
+              <header
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  paddingBottom: "0.6rem",
+                  borderBottom: "1px solid var(--border)",
+                }}
+              >
+                <span className="eyebrow" style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                  <Sparkles size={12} style={{ color: "var(--gold)" }} />
+                  <span>Grounding: 2 Rows Selected</span>
+                </span>
+                <span className="preset-btn__meta">Streaming</span>
               </header>
 
               <div className="curator-note">
-                <strong style={{ color: "var(--gold)", fontSize: "0.75rem", display: "block", marginBottom: "0.35rem" }}>
-                  Growth vs. R&amp;D Allocation
+                <strong
+                  style={{
+                    color: "var(--gold)",
+                    fontSize: "0.75rem",
+                    display: "block",
+                    marginBottom: "0.35rem",
+                  }}
+                >
+                  Prompt: "Analyze the top growth drivers in current selection"
                 </strong>
-                <p style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", lineHeight: 1.6 }}>
-                  India records the highest GDP growth in the sample (7.2%) despite a 0.7% R&amp;D
-                  share, whereas mature peers invest over 3% of GDP to sustain frontier tech indices
-                  above 89.
+                <p
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--muted-foreground)",
+                    lineHeight: 1.6,
+                    minHeight: "4rem",
+                  }}
+                >
+                  {fullAiResponses[activeAiPrompt].slice(0, streamIndex)}
+                  {streamIndex < fullAiResponses[activeAiPrompt].length && (
+                    <span className="streaming-cursor" />
+                  )}
                 </p>
               </div>
 
-              <Link to="/workspace" className="btn-editorial">
-                <span>Open Workspace</span>
-                <ArrowRight size={14} aria-hidden="true" />
-              </Link>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAutoplaying(false);
+                    setActiveAiPrompt((prev) => (prev === 0 ? 1 : 0));
+                  }}
+                  className="dataset-chip"
+                >
+                  Regenerate query
+                </button>
+
+                <a href="#demo" className="btn-editorial" style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem" }}>
+                  <span>Try in Sandbox</span>
+                  <ArrowRight size={13} aria-hidden="true" />
+                </a>
+              </div>
             </>
           )}
 
+          {/* BEAT 4: VISUALIZE / RECHARTS PREVIEW */}
           {activeStep.previewWidget === "recharts" && (
             <>
-              <header style={{ display: "flex", justifyContent: "space-between", paddingBottom: "0.6rem", borderBottom: "1px solid var(--border)" }}>
-                <span className="sandbox-breadcrumb" style={{ color: "var(--foreground)", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+              <header
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  paddingBottom: "0.6rem",
+                  borderBottom: "1px solid var(--border)",
+                }}
+              >
+                <span
+                  className="sandbox-breadcrumb"
+                  style={{
+                    color: "var(--foreground)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
+                >
                   <BarChart3 size={14} style={{ color: "var(--gold)" }} />
-                  <span>Growth_Rate by Country</span>
+                  <span>Growth_Rate by Economy</span>
                 </span>
-                <span className="preset-btn__meta">Bar</span>
+
+                {/* Chart type switcher buttons */}
+                <div style={{ display: "flex", gap: "0.25rem" }}>
+                  {(["bar", "line", "area"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => {
+                        setIsAutoplaying(false);
+                        setMockChartMode(m);
+                      }}
+                      className="dataset-chip"
+                      style={{
+                        padding: "0.2rem 0.5rem",
+                        fontSize: "0.625rem",
+                        borderColor: mockChartMode === m ? "var(--gold)" : undefined,
+                        color: mockChartMode === m ? "var(--gold)" : undefined,
+                      }}
+                    >
+                      {m.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
               </header>
 
-              <div style={{ height: "10rem", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "0.5rem", padding: "1rem 1rem 0", border: "1px solid var(--border-subtle)" }}>
-                <div style={{ width: "18%", height: "40%", background: "oklch(0.78 0.13 80 / 0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: "0.625rem" }}>
-                  2.5%
-                </div>
-                <div style={{ width: "18%", height: "70%", background: "oklch(0.78 0.13 80 / 0.7)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: "0.625rem" }}>
-                  5.2%
-                </div>
-                <div style={{ width: "18%", height: "25%", background: "oklch(0.78 0.13 80 / 0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: "0.625rem" }}>
-                  1.3%
-                </div>
-                <div style={{ width: "18%", height: "95%", background: "var(--gold)", color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: "0.625rem", fontWeight: 600 }}>
-                  7.2%
-                </div>
-                <div style={{ width: "18%", height: "15%", background: "oklch(0.78 0.13 80 / 0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: "0.625rem" }}>
-                  0.5%
-                </div>
+              {/* Dynamic Interactive SVG Chart Preview */}
+              <div
+                style={{
+                  height: "10rem",
+                  display: "flex",
+                  alignItems: "flex-end",
+                  justifyContent: "space-between",
+                  gap: "0.5rem",
+                  padding: "1rem 1rem 0",
+                  border: "1px solid var(--border-subtle)",
+                  backgroundColor: "var(--surface-subtle)",
+                  borderRadius: "var(--radius)",
+                }}
+              >
+                {mockChartMode === "bar" && (
+                  <>
+                    <div style={{ width: "18%", height: "35%", background: "oklch(0.78 0.13 80 / 0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: "0.625rem", transition: "height 0.4s ease" }}>
+                      2.5%
+                    </div>
+                    <div style={{ width: "18%", height: "72%", background: "oklch(0.78 0.13 80 / 0.7)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: "0.625rem", transition: "height 0.4s ease" }}>
+                      5.2%
+                    </div>
+                    <div style={{ width: "18%", height: "20%", background: "oklch(0.78 0.13 80 / 0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: "0.625rem", transition: "height 0.4s ease" }}>
+                      1.3%
+                    </div>
+                    <div style={{ width: "18%", height: "100%", background: "var(--gold)", color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: "0.625rem", fontWeight: 700, transition: "height 0.4s ease" }}>
+                      7.2%
+                    </div>
+                    <div style={{ width: "18%", height: "15%", background: "oklch(0.78 0.13 80 / 0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: "0.625rem", transition: "height 0.4s ease" }}>
+                      0.5%
+                    </div>
+                  </>
+                )}
+
+                {mockChartMode === "line" && (
+                  <svg viewBox="0 0 200 80" style={{ width: "100%", height: "100%", overflow: "visible" }}>
+                    <polyline
+                      fill="none"
+                      stroke="var(--gold)"
+                      strokeWidth="2.5"
+                      points="15,55 55,25 95,65 135,5 175,70"
+                    />
+                    <circle cx="15" cy="55" r="4" fill="var(--gold)" />
+                    <circle cx="55" cy="25" r="4" fill="var(--gold)" />
+                    <circle cx="95" cy="65" r="4" fill="var(--gold)" />
+                    <circle cx="135" cy="5" r="5" fill="#fff" stroke="var(--gold)" strokeWidth="2" />
+                    <circle cx="175" cy="70" r="4" fill="var(--gold)" />
+                  </svg>
+                )}
+
+                {mockChartMode === "area" && (
+                  <svg viewBox="0 0 200 80" style={{ width: "100%", height: "100%", overflow: "visible" }}>
+                    <defs>
+                      <linearGradient id="tourAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--gold)" stopOpacity="0.5" />
+                        <stop offset="100%" stopColor="var(--gold)" stopOpacity="0.05" />
+                      </linearGradient>
+                    </defs>
+                    <polygon
+                      fill="url(#tourAreaGrad)"
+                      points="15,80 15,55 55,25 95,65 135,5 175,70 175,80"
+                    />
+                    <polyline
+                      fill="none"
+                      stroke="var(--gold)"
+                      strokeWidth="2"
+                      points="15,55 55,25 95,65 135,5 175,70"
+                    />
+                  </svg>
+                )}
               </div>
 
-              <p className="preset-btn__meta" style={{ textAlign: "center" }}>
-                Switch between bar, line, area, scatter, and pie views
-              </p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.25rem" }}>
+                <span className="preset-btn__meta">Instant inline SVG rendering</span>
+                <a href="#demo" className="preset-btn__meta" style={{ color: "var(--gold)" }}>
+                  Test with all 5 models ↓
+                </a>
+              </div>
             </>
           )}
         </aside>

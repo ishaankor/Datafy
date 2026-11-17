@@ -156,8 +156,7 @@ export const AIChat = ({
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content:
-            "Request timed out or encountered a network error. Try highlighting specific columns or rows for faster analysis.",
+          content: "The sidekick is facing some problems right now. Please try again later.",
         },
       ]);
     } finally {

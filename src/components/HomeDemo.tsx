@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,10 @@ import {
   Send,
   Copy,
   Check,
+  Play,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import {
   ResponsiveContainer,
   BarChart,
@@ -172,12 +175,20 @@ const CHART_COLORS = [
   "oklch(0.80 0.15 40)",
 ];
 
-export function HomeDemo() {
+export interface HomeDemoProps {
+  injectedCsv?: { name: string; csv: string } | null;
+}
+
+export function HomeDemo({ injectedCsv }: HomeDemoProps = {}) {
   const navigate = useNavigate();
   const [selectedDatasetId, setSelectedDatasetId] = useState<string>("economy");
   const [customCsvInput, setCustomCsvInput] = useState<string>("");
   const [isCustomMode, setIsCustomMode] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"table" | "chart" | "ai">("table");
+
+  // Auto-walkthrough simulation state
+  const [isAutoWalkthrough, setIsAutoWalkthrough] = useState<boolean>(false);
+  const [walkthroughBeat, setWalkthroughBeat] = useState<number>(0);
 
   // Table state
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -185,6 +196,46 @@ export function HomeDemo() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(0);
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: string } | null>(null);
+
+  // Injected CSV handler
+  useEffect(() => {
+    if (injectedCsv?.csv) {
+      setIsCustomMode(true);
+      setCustomCsvInput(injectedCsv.csv);
+      setSelectedRowIndex(0);
+      setSelectedCell(null);
+      setActiveTab("table");
+      setIsAutoWalkthrough(false);
+    }
+  }, [injectedCsv]);
+
+  // Auto-walkthrough cycle
+  useEffect(() => {
+    if (!isAutoWalkthrough) return;
+
+    const timer = setInterval(() => {
+      setWalkthroughBeat((prev) => {
+        const nextBeat = (prev + 1) % 3;
+        if (nextBeat === 0) {
+          // Beat 0: Table selection
+          setActiveTab("table");
+          setSelectedRowIndex(4);
+          setSelectedCell({ row: 4, col: "Growth_Rate" });
+        } else if (nextBeat === 1) {
+          // Beat 1: Chart morph
+          setActiveTab("chart");
+          setSelectedChartType("bar");
+        } else if (nextBeat === 2) {
+          // Beat 2: Sidekick interrogation
+          setActiveTab("ai");
+          setActivePromptIndex(0);
+        }
+        return nextBeat;
+      });
+    }, 4000);
+
+    return () => clearInterval(timer);
+  }, [isAutoWalkthrough]);
 
   // Chart State
   const [selectedChartType, setSelectedChartType] = useState<"bar" | "line" | "area" | "pie">(
@@ -443,37 +494,68 @@ export function HomeDemo() {
             {parsedData.headers.length} cols
           </div>
 
-          {/* VIEW TAB SWITCHER */}
-          <div className="sandbox-tablist" role="tablist" aria-label="Sandbox view mode">
+          {/* VIEW TAB SWITCHER & DEMO CONTROLLER */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div className="sandbox-tablist" role="tablist" aria-label="Sandbox view mode">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "table"}
+                onClick={() => {
+                  setIsAutoWalkthrough(false);
+                  setActiveTab("table");
+                }}
+                className="sandbox-tab"
+              >
+                <TableIcon size={14} aria-hidden="true" />
+                <span>Table</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "chart"}
+                onClick={() => {
+                  setIsAutoWalkthrough(false);
+                  setActiveTab("chart");
+                }}
+                className="sandbox-tab"
+              >
+                <BarChart3 size={14} aria-hidden="true" />
+                <span>Chart</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "ai"}
+                onClick={() => {
+                  setIsAutoWalkthrough(false);
+                  setActiveTab("ai");
+                }}
+                className="sandbox-tab"
+              >
+                <MessageCircle size={14} aria-hidden="true" />
+                <span>Sidekick</span>
+              </button>
+            </div>
+
             <button
               type="button"
-              role="tab"
-              aria-selected={activeTab === "table"}
-              onClick={() => setActiveTab("table")}
-              className="sandbox-tab"
+              onClick={() => setIsAutoWalkthrough((prev) => !prev)}
+              className="btn-secondary-editorial"
+              style={{ padding: "0.28rem 0.65rem", fontSize: "0.6875rem", gap: "0.35rem" }}
+              title="Toggle automated workflow demonstration"
             >
-              <TableIcon size={14} aria-hidden="true" />
-              <span>Table</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "chart"}
-              onClick={() => setActiveTab("chart")}
-              className="sandbox-tab"
-            >
-              <BarChart3 size={14} aria-hidden="true" />
-              <span>Chart</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "ai"}
-              onClick={() => setActiveTab("ai")}
-              className="sandbox-tab"
-            >
-              <MessageCircle size={14} aria-hidden="true" />
-              <span>Sidekick</span>
+              {isAutoWalkthrough ? (
+                <>
+                  <span className="live-pulse-dot" />
+                  <span>Pause Demo</span>
+                </>
+              ) : (
+                <>
+                  <Play size={11} aria-hidden="true" />
+                  <span>Auto-Demo</span>
+                </>
+              )}
             </button>
           </div>
 
@@ -590,20 +672,37 @@ export function HomeDemo() {
                 </table>
               </div>
 
-              <footer className="sandbox-statusbar">
+              <footer className="sandbox-statusbar" style={{ fontVariantNumeric: "tabular-nums" }}>
                 {cellStats ? (
-                  <div style={{ display: "flex", gap: "1rem", color: "var(--foreground)" }}>
+                  <div style={{ display: "flex", gap: "1rem", color: "var(--foreground)", flexWrap: "wrap", alignItems: "center" }}>
                     <strong style={{ color: "var(--gold)" }}>{cellStats.colName}</strong>
-                    <span>n={cellStats.count}</span>
-                    <span>Σ {cellStats.sum.toLocaleString()}</span>
-                    <span>μ {cellStats.avg.toFixed(2)}</span>
-                    <span>min {cellStats.min}</span>
-                    <span>max {cellStats.max}</span>
+                    <span>
+                      n=<AnimatedNumber value={cellStats.count} />
+                    </span>
+                    <span>
+                      Σ <AnimatedNumber value={cellStats.sum} decimals={cellStats.sum % 1 !== 0 ? 1 : 0} />
+                    </span>
+                    <span>
+                      μ <AnimatedNumber value={cellStats.avg} decimals={2} />
+                    </span>
+                    <span>
+                      min <AnimatedNumber value={cellStats.min} />
+                    </span>
+                    <span>
+                      max <AnimatedNumber value={cellStats.max} />
+                    </span>
                   </div>
                 ) : (
-                  <span>
-                    Row {selectedRowIndex !== null ? `#${selectedRowIndex + 1}` : ""} selected ·
-                    Click any numeric cell for column summary statistics
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                    <span>
+                      Row {selectedRowIndex !== null ? `#${selectedRowIndex + 1}` : "none"} ·
+                    </span>
+                    <span>
+                      <AnimatedNumber value={processedRows.length} /> records parsed ·
+                    </span>
+                    <span style={{ color: "var(--muted-foreground)" }}>
+                      Click any numeric cell for column roll-up
+                    </span>
                   </span>
                 )}
               </footer>
@@ -782,7 +881,36 @@ export function HomeDemo() {
                       <span className="eyebrow">{msg.role === "assistant" ? "Sidekick" : "You"}</span>
                       <time className="preset-btn__meta">{msg.time}</time>
                     </header>
-                    <p style={{ fontSize: "0.75rem", lineHeight: 1.6 }}>{msg.content}</p>
+                    <div style={{ fontSize: "0.75rem", lineHeight: 1.6 }}>
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => (
+                            <p style={{ margin: 0, lineHeight: 1.6 }}>{children}</p>
+                          ),
+                          strong: ({ children }) => (
+                            <strong style={{ fontWeight: 600, color: "var(--gold)" }}>
+                              {children}
+                            </strong>
+                          ),
+                          code: ({ children }) => (
+                            <code
+                              style={{
+                                background: "var(--surface-elevated)",
+                                color: "var(--gold)",
+                                padding: "0.1rem 0.35rem",
+                                borderRadius: "2px",
+                                fontFamily: "var(--font-mono)",
+                                fontSize: "0.7rem",
+                              }}
+                            >
+                              {children}
+                            </code>
+                          ),
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
                   </article>
                 ))}
 
@@ -845,7 +973,16 @@ export function HomeDemo() {
               <span className="preset-btn__meta">{activePreset.name}</span>
             </figcaption>
             <blockquote>
-              {activePreset.prompts[activePromptIndex]?.response.replace(/\*\*/g, "")}
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => <span style={{ lineHeight: 1.6 }}>{children}</span>,
+                  strong: ({ children }) => (
+                    <strong style={{ fontWeight: 600, color: "var(--gold)" }}>{children}</strong>
+                  ),
+                }}
+              >
+                {activePreset.prompts[activePromptIndex]?.response || ""}
+              </ReactMarkdown>
             </blockquote>
 
             <div style={{ display: "flex", justifyContent: "flex-end" }}>

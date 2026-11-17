@@ -204,7 +204,7 @@ Do NOT just write text describing a chart without outputting the \`\`\`chart ...
         return new Response(
           JSON.stringify({
             response:
-              "### Data Analysis Summary\n\n- **Status**: Analysis evaluated on selection.\n- **Recommendation**: Ensure the Python backend (`datafy-brain`) is running for deep Matplotlib/Seaborn graph generation.",
+              "The sidekick is facing some problems right now. Please try again in a moment.",
           }),
           { headers: { "Content-Type": "application/json" } },
         );

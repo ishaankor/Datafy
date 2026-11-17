@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { HomeDemo, PRESET_DATASETS, type DemoDataset } from "@/components/HomeDemo";
 import { HomeGuidedTour } from "@/components/HomeGuidedTour";
@@ -18,6 +19,8 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const navigate = useNavigate();
+  const [isDragging, setIsDragging] = useState(false);
+  const [injectedData, setInjectedData] = useState<{ name: string; csv: string } | null>(null);
 
   const handleQuickEnterDataset = (ds: DemoDataset) => {
     try {
@@ -29,8 +32,70 @@ function Home() {
     navigate({ to: "/workspace" });
   };
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        const file = files[0];
+        if (file.name.endsWith(".csv") || file.name.endsWith(".tsv") || file.name.endsWith(".txt")) {
+          const text = await file.text();
+          setInjectedData({ name: file.name, csv: text });
+          try {
+            sessionStorage.setItem("datafy_demo_csv", text);
+            sessionStorage.setItem("datafy_demo_name", file.name);
+          } catch {
+            // ignore
+          }
+          // Smooth scroll to demo
+          setTimeout(() => {
+            const demoElem = document.getElementById("demo");
+            if (demoElem) {
+              demoElem.scrollIntoView({ behavior: "smooth" });
+            }
+          }, 100);
+        }
+      }
+    },
+    []
+  );
+
   return (
-    <main className="editorial-page">
+    <main
+      className="editorial-page"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      style={{ position: "relative" }}
+    >
+      {/* DRAG AND DROP INGESTION OVERLAY */}
+      {isDragging && (
+        <div className="hero-dropzone-overlay" aria-live="assertive">
+          <Upload size={36} style={{ color: "var(--gold)", marginBottom: "1rem" }} />
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.75rem", color: "var(--foreground)", marginBottom: "0.5rem" }}>
+            Drop CSV or TSV to inspect on canvas
+          </h2>
+          <p style={{ color: "var(--muted-foreground)", fontSize: "0.875rem" }}>
+            Your table will be parsed instantly in your browser tab.
+          </p>
+        </div>
+      )}
+
       {/* 1. HERO ENTRANCE SECTION */}
       <section className="hero-entrance" aria-labelledby="hero-title">
         <div className="hero-spotlight" aria-hidden="true" />
@@ -40,7 +105,10 @@ function Home() {
           <header className="masthead-bar">
             <div className="masthead-vol">
               <span className="masthead-rule" aria-hidden="true" />
-              <p className="eyebrow">Interactive Data Canvas</p>
+              <p className="eyebrow" style={{ display: "inline-flex", alignItems: "center", gap: "0.45rem" }}>
+                <span className="live-pulse-dot" />
+                <span>Interactive Data Canvas</span>
+              </p>
               <span className="masthead-rule" aria-hidden="true" />
             </div>
           </header>
@@ -61,15 +129,18 @@ function Home() {
             </p>
           </div>
 
-          {/* PRIMARY THRESHOLD CTAS */}
+          {/* PRIMARY THRESHOLD CTAS WITH ARROW ANIMATIONS */}
           <div className="hero-actions">
-            <Link to="/workspace" className="btn-editorial btn-editorial--lg">
+            <Link to="/workspace" className="btn-editorial btn-editorial--lg btn-animated-arrow">
               <span>Enter Workspace</span>
-              <ArrowRight size={14} aria-hidden="true" />
+              <span className="arrow-icon">
+                <ArrowRight size={14} aria-hidden="true" />
+              </span>
             </Link>
 
-            <a href="#demo" className="btn-secondary-editorial">
-              Try Sandbox Below ↓
+            <a href="#demo" className="btn-secondary-editorial btn-animated-arrow-down">
+              <span>Try Sandbox Below</span>
+              <span className="arrow-icon" style={{ fontSize: "0.875rem", lineHeight: 1 }}>↓</span>
             </a>
           </div>
 
@@ -83,12 +154,13 @@ function Home() {
                 onClick={() => handleQuickEnterDataset(ds)}
                 className="dataset-chip"
               >
-                {ds.name} ↗
+                <span>{ds.name}</span>
+                <span className="chip-arrow" aria-hidden="true">↗</span>
               </button>
             ))}
             <Link to="/workspace" className="dataset-chip dataset-chip--dashed">
               <Upload size={12} aria-hidden="true" />
-              <span>Your CSV</span>
+              <span>Drop Any CSV</span>
             </Link>
           </nav>
 
@@ -98,22 +170,38 @@ function Home() {
           {/* EDITORIAL SPEC LEDGER */}
           <dl className="spec-ledger" aria-label="Platform specifications">
             <div>
-              <span className="eyebrow">01 / Ingest</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className="eyebrow">01 / Ingest</span>
+                <span className="preset-btn__meta" style={{ color: "var(--gold)" }}>● Live Engine</span>
+              </div>
               <dt>Direct CSV &amp; TSV</dt>
               <dd>Parsed locally with automatic schema and type detection.</dd>
             </div>
             <div>
-              <span className="eyebrow">02 / Context</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className="eyebrow">02 / Context</span>
+                <span className="preset-btn__meta">Spatial</span>
+              </div>
               <dt>Spatial Selection</dt>
               <dd>Isolate specific cells, rows, or columns before querying.</dd>
             </div>
             <div>
-              <span className="eyebrow">03 / Graphics</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className="eyebrow">03 / Graphics</span>
+                <div className="mini-equalizer" aria-hidden="true">
+                  <span style={{ animationDelay: "0ms" }} />
+                  <span style={{ animationDelay: "220ms" }} />
+                  <span style={{ animationDelay: "440ms" }} />
+                </div>
+              </div>
               <dt>Inline Plotting</dt>
               <dd>Bar, line, area, scatter, and distribution charts on demand.</dd>
             </div>
             <div>
-              <span className="eyebrow">04 / Continuity</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className="eyebrow">04 / Continuity</span>
+                <span className="preset-btn__meta">Browser Sync</span>
+              </div>
               <dt>Saved Sessions</dt>
               <dd>Datasets and analysis threads persist across visits.</dd>
             </div>
@@ -122,7 +210,7 @@ function Home() {
       </section>
 
       {/* 2. INTERACTIVE LIVE DEMO SHOWCASE */}
-      <HomeDemo />
+      <HomeDemo injectedCsv={injectedData} />
 
       <div className="hairline" style={{ maxWidth: "64rem", margin: "3rem auto" }} role="separator" />
 
